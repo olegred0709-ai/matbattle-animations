@@ -167,7 +167,7 @@
         <span>МАТБАТЛ · АНИМАЦИИ</span>
       </div>
       <h1>Стикмены <span class="accent">Матбатла</span></h1>
-      <p class="lead">Версия 4 — появился гардероб: 60+ вещей, эффекты и стили линий. На карточках отмечено, какие правки уже учтены. Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
+      <p class="lead">Версия 5 — удары, пинки и апперкот теперь достают до цели, движения плавнее, сальто вокруг центра, подарок открывается руками; добавлены стикер от бота и реакции без текста. Гардероб — кнопка в студии справа. Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
       <div class="howto">
         <span>👍 / 👎 — голос виден всей команде</span>
         <span>Комментарий — что поменять</span>
@@ -306,6 +306,12 @@
     tired:  { lean: 14, head: 20, ra: [20, 30], la: [12, 34], rl: [84, 86], ll: [70, 94], dy: -17, spin: 0 },
     whistle:{ lean: 0, head: 0, ra: [40, 140], la: [-12, 12], rl: [8, 0], ll: [-8, 0], dy: 0, spin: 0 },
     nod:    { lean: 2, head: 14, ra: [12, 12], la: [-12, 12], rl: [5, 0], ll: [-5, 0], dy: 0, spin: 0 },
+    jab:    { lean: 18, head: 4, ra: [104, 0], la: [22, 128], rl: [24, 12], ll: [-24, 4], dy: -2, spin: 0 },
+    openBox:{ lean: 34, head: 16, ra: [66, 16], la: [58, 20], rl: [62, 112], ll: [32, 102], dy: -15, spin: 0 },
+    liftLid:{ lean: 8, head: -12, ra: [128, 18], la: [118, 22], rl: [20, 30], ll: [-6, 24], dy: -4, spin: 0 },
+    clapA:  { lean: 0, head: -4, ra: [72, 70], la: [60, 86], rl: [6, 0], ll: [-6, 0], dy: 0, spin: 0 },
+    clapB:  { lean: 0, head: -4, ra: [62, 96], la: [54, 104], rl: [6, 0], ll: [-6, 0], dy: 0, spin: 0 },
+    cheeks: { lean: -6, head: -8, ra: [130, 150], la: [122, 156], rl: [6, 0], ll: [-6, 0], dy: 0, spin: 0 },
     kick:   { lean: -14, head: 0, ra: [40, 110], la: [-30, 60], rl: [98, 4], ll: [-8, 8], dy: 0, spin: 0 },
     run1:   { lean: 16, head: 4, ra: [-45, 85], la: [55, 95], rl: [55, 75], ll: [-35, 55], dy: 1, spin: 0 },
     run2:   { lean: 16, head: 4, ra: [55, 95], la: [-45, 85], rl: [-35, 55], ll: [55, 75], dy: 3, spin: 0 },
@@ -759,6 +765,19 @@
     return [sh[0] + Math.cos(ang) * l1, sh[1] + Math.sin(ang) * l1];
   }
 
+  /**
+   * x второго бойца, при котором его точка `getB` совпадёт с точкой `getA` первого — чтобы кулак
+   * или нога в момент удара касались цели, а не били по воздуху.
+   */
+  function contactX(poseA, xA, fA, getA, poseB, fB, getB, g, s) {
+    const a = getA(skeleton(poseA, xA, g, s, fA));
+    const b = getB(skeleton(poseB, 0, g, s, fB));
+    return a[0] - b[0];
+  }
+  const faceOf = (k) => [k.head[0] + k.f * BONES.head * k.s * 0.9, k.head[1] + BONES.head * k.s * 0.2];
+  const chinOf = (k) => [k.head[0] + k.f * BONES.head * k.s * 0.5, k.head[1] + BONES.head * k.s * 0.85];
+  const bellyOf = (k) => { const p = [lerp(k.hip[0], k.sh[0], 0.35), lerp(k.hip[1], k.sh[1], 0.35)]; return [p[0] + k.f * 3 * k.s, p[1]]; };
+
   // ─── Реквизит ───
 
   function ground(ctx, W, y, color = '#2a2338') { ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(12, y); ctx.lineTo(W - 12, y); ctx.stroke(); }
@@ -829,6 +848,7 @@
     { id: 'break', title: 'Пауза между раундами', note: '10 секунд с правильным ответом.' },
     { id: 'result', title: 'Итог матча', note: 'Экран результата. Ничьих нет — см. правила матча.' },
     { id: 'meta', title: 'Профиль, магазин, подарки', note: 'Мета-игра: всё, где виден персонаж.' },
+    { id: 'social', title: 'Бот и общение', note: 'Уведомления в чате MAX и реакции без текста.' },
   ];
 
   const GREETINGS = [
@@ -839,27 +859,12 @@
 
   const SCENES = [
     // ─── Вход ───
-    { id: 'hello', fixed: 'Бег из 8 фаз, приветствие на 12 языках', group: 'enter', title: 'Выбегает и машет', where: 'Первый экран после открытия из MAX; приветствие каждый раз на новом языке', trigger: 'при входе', dur: 4,
-      draw(ctx, W, H, t) {
-        const g = H * 0.82; ground(ctx, W, g);
-        const T = t % 4, runEnd = 1.3, x = lerp(-30, W * 0.5, ease(clamp01(T / runEnd)));
-        const pose = T < runEnd ? runPose(T)
-          : keys([[runEnd, P.stand], [1.5, P.wave1], [1.75, P.wave2], [2, P.wave1], [2.25, P.wave2], [2.5, P.wave1], [2.9, P.stand], [4, P.stand]], T);
-        if (T < runEnd) dust(ctx, x, g, T);
-        figure(ctx, pose, x, g, { t });
-        // Каждый выход — новое приветствие.
-        const [hi, lang] = GREETINGS[Math.floor(t / 4) % GREETINGS.length];
-        const fade = clamp01((T - 1.6) * 4) * clamp01((3.2 - T) * 4);
-        if (T > 1.6 && T < 3.2) {
-          text(ctx, hi, x + 58, g - 92, 15, '#f5f3fa', { alpha: fade });
-          text(ctx, lang, x + 58, g - 74, 9, '#9b93b2', { alpha: fade, weight: 500 });
-        }
-      } },
-    { id: 'assemble', group: 'enter', title: 'Собирается из линий', where: 'После регистрации: «вот твой персонаж»', trigger: 'один раз', dur: 3.2,
+    { id: 'assemble', fixed: 'Прыжок с замахом и мягким приземлением', group: 'enter', title: 'Собирается из линий', where: 'После регистрации: «вот твой персонаж»', trigger: 'один раз', dur: 3.2,
       draw(ctx, W, H, t) {
         const g = H * 0.84, T = t % 3.2; ground(ctx, W, g);
         const reveal = clamp01(T / 1.3);
-        const pose = T < 1.5 ? P.stand : keys([[1.5, P.stand], [1.8, P.jump], [2.1, P.armsUp], [2.6, P.stand]], T);
+        // Замах вниз, толчок, зависание, мягкое приземление в присед и выпрямление.
+        const pose = T < 1.45 ? P.stand : keys([[1.45, P.stand], [1.75, P.crouch], [1.98, P.jump], [2.2, with_(P.jump, { dy: 30 })], [2.45, P.crouch], [2.85, P.stand], [3.2, P.stand]], T);
         figure(ctx, pose, W / 2, g, { t, reveal });
         if (T > 1.4 && T < 2.2) for (let i = 0; i < 6; i++) sparkle(ctx, W / 2 + Math.cos(i) * 55, g - 60 + Math.sin(i * 2) * 40, 5, 1 - (T - 1.4) / 0.8);
       } },
@@ -981,15 +986,22 @@
         figure(ctx, b(t), W * 0.36, g, { t, gloves: true, s: 1.3 });
         figure(ctx, b(t + 0.4), W * 0.64, g, { t, f: -1, look: OPPONENT, gloves: true, s: 1.3 });
       } },
-    { id: 'myHit', group: 'battle', title: 'Верный ответ — удар', where: 'Вы ответили верно', trigger: 'на событие, 0.8 с', dur: 2, wide: true,
+    { id: 'myHit', fixed: 'Кулак достаёт до лица соперника', group: 'battle', title: 'Верный ответ — удар', where: 'Вы ответили верно', trigger: 'на событие, 0.8 с', dur: 2, wide: true,
       draw(ctx, W, H, t) {
-        const g = H * 0.86, T = t % 2; ground(ctx, W, g);
-        const a = keys([[0, P.guard], [0.45, P.guard2], [0.6, P.punch], [0.9, P.punch], [1.3, P.guard], [2, P.guard]], T);
-        const b = keys([[0, P.guard], [0.58, P.guard], [0.7, P.hit], [1.1, P.hit], [1.5, P.guard], [2, P.guard]], T);
-        figure(ctx, a, W * 0.38 + (T > 0.5 && T < 1 ? 10 : 0), g, { t, gloves: true, s: 1.3 });
-        figure(ctx, b, W * 0.64 + (T > 0.6 && T < 1.2 ? 12 : 0), g, { t, f: -1, look: OPPONENT, gloves: true, s: 1.3, mood: T > 0.6 && T < 1.2 ? 'wow' : undefined });
-        if (T > 0.6 && T < 1.1) { const k = (T - 0.6) / 0.5; burst(ctx, W * 0.57, g - 64, 22 + k * 10, '#ffd23f', 1 - k); text(ctx, 'БАМ!', W * 0.57, g - 64, 11, '#0d0b14', { alpha: 1 - k }); }
-        if (T > 0.7 && T < 1.6) text(ctx, '+1 раунд', W * 0.38, g - 108 - (T - 0.7) * 20, 12, '#c8f53c', { alpha: 1 - (T - 0.7) / 0.9 });
+        const g = H * 0.86, T = t % 2, s = 1.3, xA = W * 0.36; ground(ctx, W, g);
+        const step = T > 0.45 && T < 1.1 ? 8 : 0;
+        // Соперник стоит ровно там, где его лицо встречает кулак на пике удара.
+        const xB = contactX(P.jab, xA + 8, 1, (k) => k.ra[1], P.guard, -1, faceOf, g, s);
+        const a = keys([[0, P.guard], [0.45, P.guard2], [0.6, P.jab], [0.85, P.jab], [1.25, P.guard], [2, P.guard]], T);
+        const b = keys([[0, P.guard], [0.58, P.guard], [0.68, P.hit], [1.1, P.hit], [1.5, P.guard], [2, P.guard]], T);
+        const recoil = T > 0.6 && T < 1.5 ? Math.sin(clamp01((T - 0.6) / 0.9) * Math.PI) * 14 : 0;
+        figure(ctx, a, xA + step, g, { t, gloves: true, s });
+        figure(ctx, b, xB + recoil, g, { t, f: -1, look: OPPONENT, gloves: true, s, mood: T > 0.6 && T < 1.2 ? 'wow' : undefined });
+        if (T > 0.58 && T < 1.05) {
+          const hit = skeleton(P.jab, xA + 8, g, s, 1).ra[1], k = (T - 0.58) / 0.47;
+          burst(ctx, hit[0] + 4, hit[1], 16 + k * 10, '#ffd23f', 1 - k); text(ctx, 'БАМ!', hit[0] + 4, hit[1] - 26 - k * 8, 11, '#ffd23f', { alpha: 1 - k, stroke: 4 });
+        }
+        if (T > 0.7 && T < 1.6) text(ctx, '+1 раунд', xA, g - 118 - (T - 0.7) * 20, 12, '#c8f53c', { alpha: 1 - (T - 0.7) / 0.9 });
       } },
     { id: 'myMiss', group: 'battle', title: 'Ошибка — промах', where: 'Вы ответили неверно', trigger: 'на событие, 0.8 с', dur: 2, wide: true,
       draw(ctx, W, H, t) {
@@ -1000,24 +1012,31 @@
         figure(ctx, b, W * 0.64, g, { t, f: -1, look: OPPONENT, gloves: true, s: 1.3 });
         if (T > 0.55 && T < 1.8) { const k = (T - 0.55) / 1.25; heart(ctx, W * 0.4, g - 110 - k * 24, 12, '#ff5c7a', 1 - k); ctx.strokeStyle = '#0d0b14'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(W * 0.4, g - 118 - k * 24); ctx.lineTo(W * 0.4 - 3, g - 110 - k * 24); ctx.lineTo(W * 0.4 + 2, g - 104 - k * 24); ctx.stroke(); }
       } },
-    { id: 'oppHit', group: 'battle', title: 'Соперник ответил — пинок', where: 'Раунд забрал соперник', trigger: 'на событие, 0.8 с', dur: 2, wide: true,
+    { id: 'oppHit', fixed: 'Нога достаёт до корпуса', group: 'battle', title: 'Соперник ответил — пинок', where: 'Раунд забрал соперник', trigger: 'на событие, 0.8 с', dur: 2, wide: true,
       draw(ctx, W, H, t) {
-        const g = H * 0.86, T = t % 2; ground(ctx, W, g);
-        const a = keys([[0, P.guard], [0.55, P.guard], [0.7, P.hit], [1.1, P.hit], [1.5, P.guard], [2, P.guard]], T);
-        const b = keys([[0, P.guard], [0.4, P.guard2], [0.6, P.kick], [0.9, P.kick], [1.3, P.guard], [2, P.guard]], T);
-        figure(ctx, a, W * 0.36 - (T > 0.6 && T < 1.2 ? 12 : 0), g, { t, gloves: true, s: 1.3, mood: T > 0.6 && T < 1.2 ? 'wow' : undefined });
-        figure(ctx, b, W * 0.62, g, { t, f: -1, look: OPPONENT, gloves: true, s: 1.3 });
-        if (T > 0.62 && T < 1.1) burst(ctx, W * 0.45, g - 58, 18, '#ff5c7a', 1 - (T - 0.62) / 0.48);
+        const g = H * 0.86, T = t % 2, s = 1.3, xB = W * 0.64; ground(ctx, W, g);
+        // Мы стоим там, куда приходится нога соперника на пике пинка.
+        const xA = contactX(P.kick, xB, -1, (k) => k.rl[1], P.guard, 1, bellyOf, g, s);
+        const a = keys([[0, P.guard], [0.55, P.guard], [0.66, P.hit], [1.1, P.hit], [1.5, P.guard], [2, P.guard]], T);
+        const b = keys([[0, P.guard], [0.4, P.guard2], [0.6, P.kick], [0.85, P.kick], [1.3, P.guard], [2, P.guard]], T);
+        const recoil = T > 0.6 && T < 1.5 ? Math.sin(clamp01((T - 0.6) / 0.9) * Math.PI) * 14 : 0;
+        figure(ctx, a, xA - recoil, g, { t, gloves: true, s, mood: T > 0.6 && T < 1.2 ? 'wow' : undefined });
+        figure(ctx, b, xB, g, { t, f: -1, look: OPPONENT, gloves: true, s });
+        if (T > 0.6 && T < 1.05) { const foot = skeleton(P.kick, xB, g, s, -1).rl[1]; burst(ctx, foot[0], foot[1], 16, '#ff5c7a', 1 - (T - 0.6) / 0.45); }
       } },
-    { id: 'finisher', group: 'battle', title: 'Апперкот на 2:0', where: 'Победный раунд', trigger: 'на событие, 1.5 с', dur: 3.2, wide: true,
+    { id: 'finisher', fixed: 'Кулак попадает в подбородок', group: 'battle', title: 'Апперкот на 2:0', where: 'Победный раунд', trigger: 'на событие, 1.5 с', dur: 3.2, wide: true,
       draw(ctx, W, H, t) {
-        const g = H * 0.86, T = t % 3.2; ground(ctx, W, g);
-        const a = keys([[0, P.guard], [0.4, P.crouch], [0.6, P.upper], [1.2, P.upper], [1.6, P.armsUp], [3.2, P.armsUp]], T);
-        figure(ctx, a, W * 0.4, g, { t, gloves: true, s: 1.3 });
-        const fly = clamp01((T - 0.6) / 1), arc = Math.sin(fly * Math.PI) * 60;
-        const b = T < 0.6 ? P.guard : T < 1.6 ? P.hit : P.lie;
-        figure(ctx, b, W * 0.6 + fly * 24, g - (T < 1.6 ? arc : 0), { t, f: -1, look: OPPONENT, gloves: true, s: 1.3, mood: T > 0.6 ? 'ko' : undefined });
-        if (T > 1.6) text(ctx, 'K.O.', W * 0.74, H * 0.24, lerp(56, 28, clamp01((T - 1.6) / 0.2)), '#c8f53c', { stroke: 6, rot: -0.12 });
+        const g = H * 0.86, T = t % 3.2, s = 1.3, xA = W * 0.36; ground(ctx, W, g);
+        // Момент удара — середина взмаха снизу вверх: там кулак встречает подбородок.
+        const hitPose = mix(P.crouch, P.upper, 0.62);
+        const xB = contactX(hitPose, xA, 1, (k) => k.ra[1], P.guard, -1, chinOf, g, s);
+        const a = keys([[0, P.guard], [0.35, P.crouch], [0.52, hitPose], [0.7, P.upper], [1.2, P.upper], [1.6, P.armsUp], [3.2, P.armsUp]], T);
+        figure(ctx, a, xA, g, { t, gloves: true, s });
+        const fly = clamp01((T - 0.52) / 1.05), arc = Math.sin(fly * Math.PI) * 58;
+        const b = T < 0.52 ? P.guard : T < 1.57 ? P.hit : P.lie;
+        figure(ctx, b, xB + fly * 34, g - (T < 1.57 ? arc : 0), { t, f: -1, look: OPPONENT, gloves: true, s, mood: T > 0.52 ? 'ko' : undefined });
+        if (T > 0.5 && T < 0.9) { const hit = skeleton(hitPose, xA, g, s, 1).ra[1]; burst(ctx, hit[0], hit[1], 18, '#ffd23f', 1 - (T - 0.5) / 0.4); }
+        if (T > 1.6) text(ctx, 'K.O.', W * 0.78, H * 0.24, lerp(56, 28, clamp01((T - 1.6) / 0.2)), '#c8f53c', { stroke: 6, rot: -0.12 });
       } },
     { id: 'hurry', group: 'battle', title: 'Мало времени — волнуются', where: 'Последние 30 секунд раунда', trigger: 'фон, ускоряется', dur: 0.6, wide: true,
       draw(ctx, W, H, t) {
@@ -1029,21 +1048,25 @@
         text(ctx, '0:24', W / 2, H * 0.2, 16, '#ff5c7a', { alpha: 0.5 + osc(t, 0.6, 0.5) });
       } },
 
-    { id: 'salto', group: 'battle', title: 'Сальто за быстрый ответ', where: 'Верный ответ быстрее 10 секунд', trigger: 'на событие, 1 с', dur: 2, wide: true,
+    { id: 'salto', fixed: 'Оборот вокруг центра тела', group: 'battle', title: 'Сальто за быстрый ответ', where: 'Верный ответ быстрее 10 секунд', trigger: 'на событие, 1 с', dur: 2, wide: true,
       draw(ctx, W, H, t) {
-        const g = H * 0.86, T = t % 2; ground(ctx, W, g);
-        figure(ctx, P.guard, W * 0.68, g, { t, f: -1, look: OPPONENT, gloves: true, s: 1.3, mood: T > 0.3 && T < 1.3 ? 'wow' : undefined });
-        const x = W * 0.36, air = clamp01((T - 0.3) / 0.7), h = Math.sin(air * Math.PI) * 58;
-        if (T < 0.3 || T > 1) {
-          figure(ctx, T < 0.3 ? keys([[0, P.guard], [0.3, P.crouch]], T) : keys([[1, P.crouch], [1.3, P.armsUp], [2, P.armsUp]], T), x, g, { t, gloves: true, s: 1.3 });
+        const g = H * 0.86, T = t % 2, s = 1.3; ground(ctx, W, g);
+        figure(ctx, P.guard, W * 0.68, g, { t, f: -1, look: OPPONENT, gloves: true, s, mood: T > 0.3 && T < 1.3 ? 'wow' : undefined });
+        const x = W * 0.36, air = clamp01((T - 0.32) / 0.66), h = Math.sin(air * Math.PI) * 60;
+        if (T < 0.32 || T > 0.98) {
+          const pose = T < 0.32 ? keys([[0, P.guard], [0.32, P.crouch]], T) : keys([[0.98, P.crouch], [1.3, P.armsUp], [2, P.armsUp]], T);
+          figure(ctx, pose, x, g, { t, gloves: true, s });
         } else {
-          // Кувырок назад вокруг центра тела.
-          const cy = g - 44 - h;
-          ctx.save(); ctx.translate(x, cy); ctx.rotate(-air * Math.PI * 2); ctx.translate(-x, -cy);
-          figure(ctx, P.tuck, x, cy + 40, { t, gloves: true, s: 1.3 });
+          // Центр вращения — середина сгруппированного тела, а не ноги.
+          const gy = g - h - 6, k = skeleton(P.tuck, x, gy, s, 1);
+          const pts = [k.head, k.sh, k.hip, k.ra[1], k.la[1], k.rl[1], k.ll[1]];
+          const cx = (Math.min(...pts.map((p) => p[0])) + Math.max(...pts.map((p) => p[0]))) / 2;
+          const cy = (Math.min(...pts.map((p) => p[1])) + Math.max(...pts.map((p) => p[1]))) / 2;
+          ctx.save(); ctx.translate(cx, cy); ctx.rotate(-ease(air) * Math.PI * 2); ctx.translate(-cx, -cy);
+          figure(ctx, P.tuck, x, gy, { t, gloves: true, s });
           ctx.restore();
         }
-        if (T > 0.9 && T < 1.9) text(ctx, '⚡ 7 с!', x, g - 130 + (T - 0.9) * -10, 14, '#c8f53c', { alpha: 1 - (T - 0.9) });
+        if (T > 0.9 && T < 1.9) text(ctx, '⚡ 7 с!', x, g - 130 - (T - 0.9) * 10, 14, '#c8f53c', { alpha: 1 - (T - 0.9) });
       } },
 
     // ─── Пауза ───
@@ -1122,31 +1145,37 @@
         text(ctx, 'Тренировка: проценты', W * 0.24, H * 0.1, 9, '#9b93b2', { weight: 500 });
       } },
 
-    { id: 'shopTry', group: 'meta', title: 'Кружится в обновке', where: 'Примерка в магазине', trigger: 'на выбор предмета', dur: 2,
+    { id: 'shopTry', fixed: 'Плавный разгон, торможение и возврат позы', group: 'meta', title: 'Кружится в обновке', where: 'Примерка в магазине', trigger: 'на выбор предмета', dur: 2,
       draw(ctx, W, H, t) {
         const g = H * 0.86, T = t % 2; ground(ctx, W, g);
-        const f = T < 0.8 ? Math.cos(T / 0.8 * Math.PI * 2) : 1;
+        // Разгон и торможение вращения, поза возвращается постепенно.
+        const f = T < 0.9 ? Math.cos(ease(T / 0.9) * Math.PI * 2) : 1;
         ctx.save(); ctx.translate(W / 2, 0); ctx.scale(Math.abs(f) < 0.12 ? 0.12 : Math.abs(f), 1); ctx.translate(-W / 2, 0);
-        figure(ctx, T < 0.8 ? P.armsUp : P.stand, W / 2, g, { t, f: f >= 0 ? 1 : -1, look: Object.assign({}, me, { item: 'cape', hat: 'crown' }) });
+        figure(ctx, keys([[0, P.stand], [0.2, P.armsUp], [0.75, P.armsUp], [1.3, P.stand], [2, P.stand]], T), W / 2, g, { t, f: f >= 0 ? 1 : -1, look: Object.assign({}, me, { item: 'cape', hat: 'crown' }) });
         ctx.restore();
         if (T > 0.8 && T < 1.6) for (let i = 0; i < 5; i++) sparkle(ctx, W / 2 + Math.cos(i * 1.3) * 50, g - 70 + Math.sin(i * 1.9) * 40, 5, 1 - (T - 0.8) / 0.8);
       } },
-    { id: 'gift', group: 'meta', title: 'Открывает подарок', where: 'Получен подарок', trigger: 'на событие', dur: 3.4,
+    { id: 'gift', fixed: 'Открывает коробку руками, вплотную', group: 'meta', title: 'Открывает подарок', where: 'Получен подарок', trigger: 'на событие', dur: 3.6,
       draw(ctx, W, H, t) {
-        const g = H * 0.86, T = t % 3.4; ground(ctx, W, g);
-        const drop = clamp01(T / 0.6), bx = W * 0.62, by = lerp(-10, g, ease(drop));
-        const lid = T < 1.4 ? 0 : clamp01((T - 1.4) / 0.3) * 1.9;
-        box(ctx, bx, by, 34, 28, lid);
-        const pose = keys([[0, P.stand], [0.9, P.stand], [1.2, P.crouch], [1.4, P.crouch], [1.8, P.armsUp], [3.4, P.armsUp]], T);
-        figure(ctx, pose, W * 0.38, g, { t, mood: T > 1.4 ? 'wow' : undefined });
-        if (T > 1.5) { const k = clamp01((T - 1.5) / 0.5); text(ctx, '💎', bx, by - 36 - k * 34, 24, '#fff', { alpha: k }); for (let i = 0; i < 4; i++) sparkle(ctx, bx + Math.cos(i * 1.6) * 26, by - 60 + Math.sin(i * 1.6) * 20, 4, k); }
+        const g = H * 0.86, T = t % 3.6, s = 1.5, sx = W * 0.34; ground(ctx, W, g);
+        // Коробка встаёт ровно под руки присевшего игрока; крышка поднимается вместе с руками.
+        const hand = skeleton(P.openBox, sx, g, s, 1).ra[1];
+        const bh = Math.max(20, Math.min(40, g - hand[1] + 3)), bx = hand[0] + 12;
+        const drop = clamp01(T / 0.6), by = lerp(-10, g, ease(drop));
+        const lift = clamp01((T - 1.35) / 0.4);
+        const pose = keys([[0, P.stand], [0.9, P.stand], [1.25, P.openBox], [1.35, P.openBox], [1.75, P.liftLid], [2.1, P.armsUp], [3.6, P.armsUp]], T);
+        box(ctx, bx, by, 34, bh, lift * 1.9);
+        figure(ctx, pose, sx, g, { t, mood: T > 1.4 ? 'wow' : undefined });
+        if (T > 1.6) { const k = clamp01((T - 1.6) / 0.5); text(ctx, '💎', bx, by - bh - 14 - k * 34, 24, '#fff', { alpha: k }); for (let i = 0; i < 4; i++) sparkle(ctx, bx + Math.cos(i * 1.6) * 26, by - bh - 40 + Math.sin(i * 1.6) * 20, 4, k); }
       } },
-    { id: 'ratingUp', fixed: 'Стикмен всё время в кадре', group: 'meta', title: 'Взбирается по рейтингу', where: 'Рейтинг вырос после матча', trigger: 'на событие', dur: 3,
+    { id: 'ratingUp', fixed: 'В кадре; подъём плавный, с подскоком на ступеньках', group: 'meta', title: 'Взбирается по рейтингу', where: 'Рейтинг вырос после матча', trigger: 'на событие', dur: 3,
       draw(ctx, W, H, t) {
         const T = t % 3, steps = 4, stepW = 50, stepH = 13, base = H * 0.94, x0 = W * 0.12, s = 0.95;
         ctx.fillStyle = '#2a2338';
         for (let i = 0; i < steps; i++) ctx.fillRect(x0 + i * stepW, base - (i + 1) * stepH, stepW, (i + 1) * stepH);
-        const p = clamp01(T / 2.4), fx = x0 + 25 + p * stepW * (steps - 1), fg = base - (Math.round(p * (steps - 1)) + 1) * stepH;
+        // Высота растёт плавно, с лёгким подскоком на каждой ступеньке.
+        const p = ease(clamp01(T / 2.4)), q = p * (steps - 1);
+        const fx = x0 + 25 + q * stepW, fg = base - (1 + q) * stepH - Math.sin((q % 1) * Math.PI) * 4;
         figure(ctx, T < 2.4 ? keys([[0, P.climb1], [0.33, P.climb2], [0.66, P.climb1]], T % 0.66) : P.armsUp, fx, fg, { t, s });
         text(ctx, '+18', Math.min(fx + 44, W - 24), fg - 70, 16, '#c8f53c', { alpha: 0.4 + p * 0.6 });
       } },
@@ -1154,9 +1183,44 @@
     // ─── Системные ───
   ];
 
+  const SOCIAL = [
+    { id: 'botSticker', group: 'social', title: 'Стикер от бота', where: 'Сообщение бота в чате MAX: соперник найден, пришёл подарок', trigger: 'в уведомлении', dur: 4,
+      draw(ctx, W, H, t) {
+        const T = t % 4;
+        // Экран чата: аватар бота, пузырь сообщения с живым стикменом и кнопкой.
+        ctx.fillStyle = '#131019'; roundRect(ctx, 14, 8, W - 28, H - 16, 14); ctx.fill();
+        const slide = ease(clamp01(T / 0.5)), bx = 52, by = lerp(H, 22, slide), bw = W - 80, bh = H - 44;
+        ctx.fillStyle = '#c8f53c'; ctx.beginPath(); ctx.arc(32, by + bh - 12, 11, 0, Math.PI * 2); ctx.fill();
+        text(ctx, '⚡', 32, by + bh - 11, 11, '#0d0b14');
+        ctx.fillStyle = '#211b2e'; roundRect(ctx, bx, by, bw, bh, 14); ctx.fill();
+        ctx.save(); ctx.beginPath(); roundRect(ctx, bx, by, bw, bh, 14); ctx.clip();
+        const g = by + bh * 0.62;
+        figure(ctx, keys([[0, P.stand], [0.6, P.wave1], [0.9, P.wave2], [1.2, P.wave1], [1.5, P.wave2], [1.8, P.stand], [4, P.stand]], T), bx + 40, g, { t, s: 0.8 });
+        text(ctx, 'Соперник найден!', bx + 72, by + 26, 11, '#f5f3fa', { align: 'left', weight: 700 });
+        text(ctx, 'Артём К., 7 класс', bx + 72, by + 44, 9, '#9b93b2', { align: 'left', weight: 500 });
+        const pulse = 1 + Math.max(0, Math.sin(T * 5)) * 0.04;
+        ctx.save(); ctx.translate(bx + 72 + 42, g - 4); ctx.scale(pulse, pulse);
+        ctx.fillStyle = '#c8f53c'; roundRect(ctx, -42, -13, 84, 26, 13); ctx.fill(); text(ctx, 'Играть', 0, 1, 11, '#0d0b14', { weight: 700 });
+        ctx.restore(); ctx.restore();
+      } },
+    { id: 'reactions', group: 'social', title: 'Реакции без текста', where: 'Пауза между раундами: одна из трёх готовых реакций', trigger: 'по нажатию', dur: 4.2,
+      draw(ctx, W, H, t) {
+        const g = H * 0.88, T = t % 4.2, i = Math.floor(T / 1.4), local = T % 1.4; ground(ctx, W, g);
+        // 👏 хлопает, 😮 хватается за щёки, 😅 чешет затылок — сопернику приходит только значок.
+        const pose = i === 0 ? keys([[0, P.clapA], [0.18, P.clapB], [0.36, P.clapA], [0.54, P.clapB], [0.72, P.clapA], [1.4, P.stand]], local)
+          : i === 1 ? keys([[0, P.stand], [0.25, P.cheeks], [1.1, P.cheeks], [1.4, P.stand]], local)
+          : keys([[0, P.stand], [0.25, P.scratch], [1.1, P.scratch], [1.4, P.stand]], local);
+        const k = figure(ctx, pose, W * 0.4, g, { t, mood: i === 1 ? 'wow' : undefined });
+        const emoji = ['👏', '😮', '😅'][i], pop = ease(clamp01(local / 0.25)) * clamp01((1.3 - local) / 0.25);
+        ctx.save(); ctx.globalAlpha = pop; ctx.fillStyle = '#211b2e'; ctx.beginPath(); ctx.arc(k.head[0] + 34, k.head[1] - 26, 18 * (0.6 + pop * 0.4), 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        text(ctx, emoji, k.head[0] + 34, k.head[1] - 25, 20 * (0.6 + pop * 0.4), '#fff', { alpha: pop });
+        if (i === 2) sweat(ctx, k.head[0] - 12, k.head[1] - 6, t, 0);
+        figure(ctx, P.stand, W * 0.8, g, { t, f: -1, look: OPPONENT, alpha: 0.5 });
+        text(ctx, emoji, W * 0.8 - 34, H * 0.16, 16, '#fff', { alpha: pop * 0.9 });
+      } },
+  ];
+
   const IDEAS = [
-    { id: 'idea-bot', title: 'Стикер от бота', text: 'Когда соперник найден или пришёл подарок, бот MAX присылает короткий GIF со стикменом игрока.' },
-    { id: 'idea-react', title: 'Реакции без текста', text: 'Три готовые реакции во время паузы (👏 😮 😅): стикмен показывает их сопернику. Общение без свободного текста — безопасно для детей.' },
     { id: 'idea-school', title: 'Толпа школы', text: 'В рейтинге школ каждая школа — толпа стикменов её учеников с флагом; чем активнее школа, тем больше толпа.' },
     { id: 'idea-week', title: 'Мультик недели', text: 'Раз в неделю — 10-секундный ролик из лучших моментов игрока: победы, достижения, рост рейтинга.' },
   ];
@@ -1207,6 +1271,7 @@
 
   // ═══ Карточки ══════════════════════════════════════════════════════════════
 
+  SCENES.push(...SOCIAL);
   const cards = [];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
