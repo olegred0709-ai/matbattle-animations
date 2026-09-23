@@ -167,7 +167,7 @@
         <span>МАТБАТЛ · АНИМАЦИИ</span>
       </div>
       <h1>Стикмены <span class="accent">Матбатла</span></h1>
-      <p class="lead">Версия 7 — фаталити: шесть покупаемых добиваний без жестокости. Версия 6 — настоящие подтягивания и снова «Выбегает и машет». Версия 5 — удары, пинки и апперкот теперь достают до цели, движения плавнее, сальто вокруг центра, подарок открывается руками; добавлены стикер от бота и реакции без текста. Гардероб — кнопка в студии справа. Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
+      <p class="lead">Версия 8 — правки фаталити: коробка по центру, понятная E = mc², чистый лёд, «Бесконечная петля» вместо ракеты. Версия 7 — фаталити: шесть покупаемых добиваний без жестокости. Версия 6 — настоящие подтягивания и снова «Выбегает и машет». Версия 5 — удары, пинки и апперкот теперь достают до цели, движения плавнее, сальто вокруг центра, подарок открывается руками; добавлены стикер от бота и реакции без текста. Гардероб — кнопка в студии справа. Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
       <div class="howto">
         <span>👍 / 👎 — голос виден всей команде</span>
         <span>Комментарий — что поменять</span>
@@ -270,7 +270,7 @@
       ['aura', 'Аура', '🔮', 'epic', 900], ['fire', 'Огонь', '🔥', 'epic', 950], ['rainbow', 'Радуга', '🌈', 'legendary', 1600] ] },
     { key: 'fatality', title: 'Фаталити', items: [
       ['none', 'Без фаталити', '·', 'common', 0], ['sqrt', 'Корень из соперника', '√', 'epic', 900], ['ice', 'Абсолютный ноль', '🧊', 'epic', 1100],
-      ['gift', 'Упакован!', '🎁', 'epic', 1200], ['bolt', 'E = mc²', '⚡', 'legendary', 1800], ['rocket', 'Пи-ракета', '🚀', 'legendary', 2000],
+      ['gift', 'Упакован!', '🎁', 'epic', 1200], ['bolt', 'E = mc²', '⚡', 'legendary', 1800], ['loop', 'Бесконечная петля', '♾️', 'legendary', 2000],
       ['void', 'Деление на ноль', '🕳️', 'legendary', 2500] ] },
     { key: 'line', title: 'Стиль линий', items: [
       ['solid', 'Обычные', '✏️', 'common', 0], ['thick', 'Жирные', '🖊️', 'uncommon', 200], ['neon', 'Неон', '💡', 'epic', 850] ] },
@@ -1380,7 +1380,7 @@
         if (drop >= 1 && T < 1.1) burst(ctx, xB - 34, g - 6, 20, '#ffd23f', 1 - (T - 0.8) / 0.3);
         if (T > 1.8) text(ctx, '√соперник = 0', W * 0.5, H * 0.14, 16, '#c8f53c', { stroke: 5, alpha: clamp01((T - 1.8) * 3) });
       } },
-    { id: 'fat-ice', group: 'fatal', title: '🧊 Абсолютный ноль', where: 'Снегопад — соперник дрожит и вмерзает в кубик льда', trigger: 'эпическая · 1 100 ⚡', dur: 4, wide: true,
+    { id: 'fat-ice', fixed: 'Чистый кубик: без палки и цифры внутри', group: 'fatal', title: '🧊 Абсолютный ноль', where: 'Снегопад — соперник дрожит и вмерзает в кубик льда', trigger: 'эпическая · 1 100 ⚡', dur: 4, wide: true,
       draw(ctx, W, H, t) {
         const g = H * 0.88, T = t % 4, xB = W * 0.66; ground(ctx, W, g);
         figure(ctx, winnerPose(T, P.stretchA), W * 0.3, g, { t, gloves: true, s: 1.3 });
@@ -1394,74 +1394,115 @@
           ctx.save(); ctx.globalAlpha = freeze;
           ctx.fillStyle = 'rgba(79,216,255,0.28)'; ctx.strokeStyle = 'rgba(191,240,255,0.9)'; ctx.lineWidth = 2;
           roundRect(ctx, xB - 42, g - 130, 84, 130, 10); ctx.fill(); ctx.stroke();
-          ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(xB - 30, g - 116); ctx.lineTo(xB - 16, g - 100); ctx.stroke();
           ctx.restore();
-          text(ctx, '0°', xB + 30, g - 116, 14, '#4fd8ff', { stroke: 4, alpha: freeze });
         }
         if (T > 2) text(ctx, 'Заморожен!', W * 0.3, H * 0.12, 16, '#4fd8ff', { stroke: 5, alpha: clamp01((T - 2) * 3) });
       } },
-    { id: 'fat-gift', group: 'fatal', title: '🎁 Упакован!', where: 'На соперника опускается коробка, сверху крышка и бант', trigger: 'эпическая · 1 200 ⚡', dur: 4, wide: true,
+    { id: 'fat-gift', fixed: 'Коробка падает ровно по центру и накрывает целиком', group: 'fatal', title: '🎁 Упакован!', where: 'Сверху падает коробка и накрывает соперника целиком, затем крышка и бант', trigger: 'эпическая · 1 200 ⚡', dur: 4, wide: true,
       draw(ctx, W, H, t) {
-        const g = H * 0.88, T = t % 4, xB = W * 0.66; ground(ctx, W, g);
-        figure(ctx, winnerPose(T, keys([[0, P.clapA], [0.2, P.clapB], [0.4, P.clapA]], T % 0.4)), W * 0.3, g, { t, gloves: false, s: 1.3 });
-        const cover = ease(clamp01((T - 0.5) / 0.5));
-        if (cover < 1) opponentAt(ctx, P.hit, xB, g, { t, mood: 'wow' });
-        const bw = 92, bh = 126, by = lerp(-bh - 20, g - bh, cover);
-        ctx.fillStyle = '#8b6bff'; ctx.fillRect(xB - bw / 2, by, bw, bh);
-        ctx.fillStyle = '#ff5c7a'; ctx.fillRect(xB - 6, by, 12, bh);
-        if (T > 1.1) {
-          const lid = ease(clamp01((T - 1.1) / 0.3));
-          ctx.fillStyle = '#9d80ff'; ctx.fillRect(xB - bw / 2 - 5, g - bh - 12 - (1 - lid) * 40, bw + 10, 14);
-          ctx.fillStyle = '#ff5c7a'; ctx.fillRect(xB - 6, g - bh - 12 - (1 - lid) * 40, 12, 14);
+        const g = H * 0.88, T = t % 4, xB = W * 0.66, s = 1.3; ground(ctx, W, g);
+        figure(ctx, winnerPose(T, keys([[0, P.clapA], [0.2, P.clapB], [0.4, P.clapA]], T % 0.4)), W * 0.28, g, { t, s });
+        // Соперник стоит ровно и смотрит вверх; центр коробки — середина его тела.
+        const k = skeleton(P.stand, xB, g, s, -1);
+        const cx = (k.head[0] + k.hip[0]) / 2;
+        const bw = 96, bh = 132;
+        const fall = clamp01((T - 0.5) / 0.45), by = lerp(-bh - 20, g - bh, fall * fall);
+        const landed = fall >= 1;
+        if (!landed) figure(ctx, with_(P.stand, { head: -18 }), xB, g, { t, f: -1, look: OPPONENT, gloves: true, s, mood: 'wow' });
+        // Удар о землю: коробка чуть сплющивается.
+        const squash = landed && T < 1.15 ? 1 - Math.sin(((T - 0.95) / 0.2) * Math.PI) * 0.06 : 1;
+        ctx.save(); ctx.translate(cx, g); ctx.scale(1 / squash, squash); ctx.translate(-cx, -g);
+        ctx.fillStyle = '#8b6bff'; ctx.fillRect(cx - bw / 2, by, bw, bh);
+        ctx.fillStyle = '#ff5c7a'; ctx.fillRect(cx - 6, by, 12, bh);
+        ctx.restore();
+        if (landed && T < 1.3) { ctx.fillStyle = `rgba(155,147,178,${0.5 * (1.3 - T) / 0.35})`; for (const d of [-1, 1]) { ctx.beginPath(); ctx.arc(cx + d * (bw / 2 + 8 + (T - 0.95) * 30), g - 5, 7, 0, Math.PI * 2); ctx.fill(); } }
+        if (T > 1.2) {
+          const lid = ease(clamp01((T - 1.2) / 0.3)), ly = g - bh - 12 - (1 - lid) * 40;
+          ctx.fillStyle = '#9d80ff'; ctx.fillRect(cx - bw / 2 - 5, ly, bw + 10, 14);
+          ctx.fillStyle = '#ff5c7a'; ctx.fillRect(cx - 6, ly, 12, 14);
         }
-        if (T > 1.5) {
-          const bow = ease(clamp01((T - 1.5) / 0.3)), y = g - bh - 14;
+        if (T > 1.6) {
+          const bow = ease(clamp01((T - 1.6) / 0.3)), y = g - bh - 14;
           ctx.fillStyle = '#ff5c7a';
-          for (const d of [-1, 1]) { ctx.beginPath(); ctx.ellipse(xB + d * 14 * bow, y - 8 * bow, 14 * bow, 9 * bow, d * 0.5, 0, Math.PI * 2); ctx.fill(); }
-          ctx.beginPath(); ctx.arc(xB, y - 4, 6 * bow, 0, Math.PI * 2); ctx.fill();
-          if (T < 2.6) for (let i = 0; i < 5; i++) sparkle(ctx, xB + Math.cos(i * 1.3) * 60, y + Math.sin(i * 1.7) * 50, 5, 1 - (T - 1.5));
+          for (const d of [-1, 1]) { ctx.beginPath(); ctx.ellipse(cx + d * 14 * bow, y - 8 * bow, 14 * bow, 9 * bow, d * 0.5, 0, Math.PI * 2); ctx.fill(); }
+          ctx.beginPath(); ctx.arc(cx, y - 4, 6 * bow, 0, Math.PI * 2); ctx.fill();
+          if (T < 2.7) for (let i = 0; i < 5; i++) sparkle(ctx, cx + Math.cos(i * 1.3) * 62, y + 20 + Math.sin(i * 1.7) * 50, 5, 1 - (T - 1.6));
         }
         if (T > 2) text(ctx, 'Упакован!', W * 0.3, H * 0.12, 16, '#ff5c7a', { stroke: 5, alpha: clamp01((T - 2) * 3) });
       } },
-    { id: 'fat-bolt', group: 'fatal', title: '⚡ E = mc²', where: 'Туча, молния — соперник с торчащими волосами и дымком', trigger: 'легендарная · 1 800 ⚡', dur: 4, wide: true,
+    { id: 'fat-bolt', fixed: 'Понятный сюжет: формула → шар энергии → удар током', group: 'fatal', title: '⚡ E = mc²', where: 'Победитель пишет формулу в воздухе, она сжимается в шар энергии и бьёт соперника током', trigger: 'легендарная · 1 800 ⚡', dur: 4.6, wide: true,
       draw(ctx, W, H, t) {
-        const g = H * 0.88, T = t % 4, xB = W * 0.66; ground(ctx, W, g);
-        figure(ctx, winnerPose(T, P.medal), W * 0.3, g, { t, gloves: true, s: 1.3 });
-        const cl = ease(clamp01(T / 0.4)) * clamp01((3.8 - T) / 0.3);
-        cloud(ctx, xB, 22, 22, cl);
-        const strike = T > 0.7 && T < 1.0;
-        if (strike) {
-          ctx.save(); ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(0, 0, W, H);
-          ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 5; ctx.shadowColor = '#ffd23f'; ctx.shadowBlur = 16; ctx.lineJoin = 'miter';
-          ctx.beginPath(); ctx.moveTo(xB, 36); ctx.lineTo(xB - 12, 70); ctx.lineTo(xB + 6, 74); ctx.lineTo(xB - 8, g - 110); ctx.stroke(); ctx.restore();
-        }
-        const k = opponentAt(ctx, T > 0.7 ? P.stand : P.hit, xB, g, { t, mood: 'ko', dx: T > 0.7 && T < 1.3 ? osc(t, 0.05, 2) : 0 });
-        if (T > 0.9) {
-          // Волосы дыбом и дымок.
-          ctx.save(); ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2.4;
-          for (let i = 0; i < 7; i++) { const a = Math.PI * (1.1 + i * 0.13), r = BONES.head * 1.3; ctx.beginPath(); ctx.moveTo(k.head[0] + Math.cos(a) * r, k.head[1] + Math.sin(a) * r); ctx.lineTo(k.head[0] + Math.cos(a) * r * 1.7, k.head[1] + Math.sin(a) * r * 1.7); ctx.stroke(); }
+        const g = H * 0.88, T = t % 4.6, s = 1.3, xA = W * 0.24, xB = W * 0.72; ground(ctx, W, g);
+        // 1. Пишет формулу: указывает рукой, буквы появляются по одной.
+        const a = keys([[0, P.guard], [0.3, P.point], [1.5, P.point], [1.75, P.jab], [2.2, P.jab], [2.8, P.armsUp], [4.6, P.armsUp]], T);
+        const kA = figure(ctx, a, xA, g, { t, s });
+        const formula = 'E = mc²', fx = W * 0.4, fy = H * 0.2;
+        if (T < 1.55) {
+          const shown = Math.ceil(clamp01((T - 0.3) / 0.9) * formula.length);
+          const squeeze = 1 - ease(clamp01((T - 1.25) / 0.3));
+          ctx.save(); ctx.shadowColor = '#ffd23f'; ctx.shadowBlur = 14;
+          text(ctx, formula.slice(0, shown), fx, fy, 24 * squeeze + 2, '#ffd23f', { stroke: 5 });
           ctx.restore();
-          for (let i = 0; i < 4; i++) { const ph = ((t * 0.8 + i * 0.25) % 1); ctx.fillStyle = `rgba(155,147,178,${0.5 * (1 - ph)})`; ctx.beginPath(); ctx.arc(k.head[0] + osc(t + i, 1, 6), k.head[1] - 20 - ph * 40, 5 + ph * 8, 0, Math.PI * 2); ctx.fill(); }
         }
-        if (T > 1.6) text(ctx, 'E = mc²', W * 0.5, H * 0.14, 17, '#ffd23f', { stroke: 5, alpha: clamp01((T - 1.6) * 3) });
+        // 2. Формула сжимается в шар энергии и 3. летит в соперника.
+        const kB0 = skeleton(P.stand, xB, g, s, -1), target = [(kB0.sh[0] + kB0.hip[0]) / 2, (kB0.sh[1] + kB0.hip[1]) / 2];
+        const fly = clamp01((T - 1.55) / 0.45);
+        if (T > 1.25 && T < 2.0) {
+          const bx = lerp(fx, target[0], ease(fly)), by = lerp(fy, target[1], ease(fly)) - Math.sin(fly * Math.PI) * 20;
+          const r = 6 + clamp01((T - 1.25) / 0.3) * 8;
+          const glow = ctx.createRadialGradient(bx, by, 1, bx, by, r * 2.2); glow.addColorStop(0, '#fffbd1'); glow.addColorStop(0.4, '#ffd23f'); glow.addColorStop(1, 'rgba(255,210,63,0)');
+          ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(bx, by, r * 2.2, 0, Math.PI * 2); ctx.fill();
+          text(ctx, 'E', bx, by + 1, 10, '#0d0b14');
+          for (let i = 1; i <= 4; i++) { ctx.fillStyle = `rgba(255,210,63,${0.3 - i * 0.06})`; ctx.beginPath(); ctx.arc(lerp(fx, target[0], ease(Math.max(0, fly - i * 0.06))), lerp(fy, target[1], ease(Math.max(0, fly - i * 0.06))), r * (1 - i * 0.18), 0, Math.PI * 2); ctx.fill(); }
+        }
+        // 4. Удар током: соперник мерцает, вокруг искры; 5. стоит с волосами дыбом и дымком.
+        const zap = T > 2.0 && T < 2.9, flicker = zap && Math.floor(t / 0.07) % 2 === 0;
+        const lookB = flicker ? { color: '#fffbd1', hat: 'none', item: 'none', face: 'smile', line: 'neon' } : OPPONENT;
+        const kB = figure(ctx, T < 2.0 ? with_(P.stand, { head: -6 }) : zap ? P.armsUp : P.stand, xB + (zap ? osc(t, 0.05, 2) : 0), g, { t, f: -1, look: lookB, gloves: true, s, mood: T < 2 ? 'wow' : 'ko' });
+        if (zap) {
+          ctx.save(); ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2; ctx.shadowColor = '#ffd23f'; ctx.shadowBlur = 8;
+          for (let i = 0; i < 5; i++) {
+            const a0 = rnd(i + Math.floor(t / 0.07)) * Math.PI * 2, r0 = 30, r1 = 52;
+            ctx.beginPath(); ctx.moveTo(target[0] + Math.cos(a0) * r0, target[1] + Math.sin(a0) * r0 * 1.4);
+            ctx.lineTo(target[0] + Math.cos(a0 + 0.2) * (r0 + 10), target[1] + Math.sin(a0 - 0.2) * (r0 + 10) * 1.4);
+            ctx.lineTo(target[0] + Math.cos(a0) * r1, target[1] + Math.sin(a0) * r1 * 1.4); ctx.stroke();
+          }
+          ctx.restore();
+        }
+        if (T >= 2.9) {
+          ctx.save(); ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2.4;
+          for (let i = 0; i < 7; i++) { const an = Math.PI * (1.1 + i * 0.13), r = BONES.head * s; ctx.beginPath(); ctx.moveTo(kB.head[0] + Math.cos(an) * r, kB.head[1] + Math.sin(an) * r); ctx.lineTo(kB.head[0] + Math.cos(an) * r * 1.7, kB.head[1] + Math.sin(an) * r * 1.7); ctx.stroke(); }
+          ctx.restore();
+          for (let i = 0; i < 4; i++) { const ph = ((t * 0.8 + i * 0.25) % 1); ctx.fillStyle = `rgba(155,147,178,${0.5 * (1 - ph)})`; ctx.beginPath(); ctx.arc(kB.head[0] + osc(t + i, 1, 6), kB.head[1] - 22 - ph * 36, 5 + ph * 7, 0, Math.PI * 2); ctx.fill(); }
+          text(ctx, 'Энергия формулы!', W * 0.5, H * 0.12, 15, '#ffd23f', { stroke: 5, alpha: clamp01((T - 2.9) * 3) });
+        }
       } },
-    { id: 'fat-rocket', group: 'fatal', title: '🚀 Пи-ракета', where: 'Соперник садится на ракету в форме π и улетает к звёздам', trigger: 'легендарная · 2 000 ⚡', dur: 4.2, wide: true,
+    { id: 'fat-loop', group: 'fatal', title: '∞ Бесконечная петля', where: 'Знак бесконечности подхватывает соперника и катает по восьмёрке, пока не закружится голова', trigger: 'легендарная · 2 000 ⚡', dur: 4.4, wide: true,
       draw(ctx, W, H, t) {
-        const g = H * 0.88, T = t % 4.2, xB = W * 0.66; ground(ctx, W, g);
-        const wave = keys([[0, P.guard], [0.4, P.stand], [1.6, P.wave1], [1.9, P.wave2], [2.2, P.wave1], [2.5, P.wave2], [2.8, P.wave1], [4.2, P.stand]], T);
-        figure(ctx, wave, W * 0.3, g, { t, s: 1.3 });
-        const slide = ease(clamp01((T - 0.3) / 0.5)), launch = clamp01((T - 1.4) / 1.4), lift = launch * launch * (H + 160);
-        const rx = lerp(W + 60, xB, slide), ry = g - 26 - lift;
-        // Ракета-π: перекладина — корпус, две ноги — сопла с пламенем.
-        ctx.save(); ctx.fillStyle = '#8b6bff';
-        roundRect(ctx, rx - 34, ry - 6, 68, 12, 6); ctx.fill();
-        ctx.fillRect(rx - 20, ry + 4, 9, 22); ctx.fillRect(rx + 12, ry + 4, 9, 22);
-        ctx.fillStyle = '#f5f3fa'; ctx.beginPath(); ctx.moveTo(rx + 34, ry - 6); ctx.lineTo(rx + 48, ry); ctx.lineTo(rx + 34, ry + 6); ctx.fill();
-        if (T > 1.2) for (let i = 0; i < 10; i++) { const ph = (t * 3 + rnd(i)) % 1; ctx.fillStyle = ph < 0.4 ? '#ffd23f' : '#ff5c7a'; ctx.globalAlpha = 1 - ph; ctx.beginPath(); ctx.arc(rx + (i % 2 ? 16 : -16) + (rnd(i + 4) - 0.5) * 6, ry + 30 + ph * 26, 5 * (1 - ph) + 2, 0, Math.PI * 2); ctx.fill(); }
-        ctx.restore();
-        if (T < 1.0) opponentAt(ctx, P.hit, xB, g, { t, mood: 'wow' });
-        else opponentAt(ctx, P.sit, rx, ry - 6 + (BONES.thigh + BONES.shin - 17) * 1.3 * 0 + 30, { t, mood: 'wow' });
-        if (T > 2.9) { const k2 = clamp01((T - 2.9) / 0.4); star(ctx, xB + 20, 24, 8 * k2 + osc(t, 0.3, 1.5), '#ffd23f', t); text(ctx, 'Улетел!', W * 0.5, H * 0.14, 16, '#c8f53c', { stroke: 5, alpha: k2 }); }
+        const g = H * 0.88, T = t % 4.4, cx = W * 0.66, cy = g - 78, A = 70; ground(ctx, W, g);
+        figure(ctx, winnerPose(T, P.point), W * 0.26, g, { t, gloves: true, s: 1.3 });
+        // Лемниската: x = A·cos u / (1 + sin²u), y = A·sin u·cos u / (1 + sin²u).
+        const lem = (u) => { const d = 1 + Math.sin(u) ** 2; return [cx + (A * Math.cos(u)) / d, cy + (A * Math.sin(u) * Math.cos(u)) / d]; };
+        const drawIn = ease(clamp01((T - 0.3) / 0.5)), fade = 1 - ease(clamp01((T - 3.0) / 0.5));
+        if (drawIn > 0 && fade > 0) {
+          ctx.save(); ctx.globalAlpha = fade; ctx.strokeStyle = '#8b6bff'; ctx.lineWidth = 6; ctx.shadowColor = '#8b6bff'; ctx.shadowBlur = 14; ctx.lineCap = 'round';
+          ctx.beginPath(); for (let i = 0; i <= 80 * drawIn; i++) { const p = lem((i / 80) * Math.PI * 2); i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); } ctx.stroke(); ctx.restore();
+        }
+        // Соперник: до петли стоит, потом едет по восьмёрке (1,5 круга), затем приземляется.
+        const ride = clamp01((T - 0.9) / 1.9);
+        if (T < 0.9) figure(ctx, P.stand, cx, g, { t, f: -1, look: OPPONENT, gloves: true, s: 1.3, mood: 'wow' });
+        else if (ride < 1) {
+          const u = -Math.PI / 2 + ease(ride) * Math.PI * 3, [px, py] = lem(u);
+          ctx.save(); ctx.translate(px, py); ctx.rotate(ride * Math.PI * 6); ctx.scale(0.55, 0.55); ctx.translate(-px, -py);
+          figure(ctx, P.tuck, px, py + 40, { t, f: -1, look: OPPONENT, gloves: true, s: 1.3, mood: 'wow' });
+          ctx.restore();
+        } else {
+          const land = ease(clamp01((T - 2.8) / 0.3));
+          const k = figure(ctx, land < 1 ? P.crouch : P.stand, cx, g, { t, f: -1, look: OPPONENT, gloves: true, s: 1.3, mood: 'ko' });
+          // Звёздочки кружатся над головой.
+          for (let i = 0; i < 3; i++) { const an = t * 4 + (i * Math.PI * 2) / 3; star(ctx, k.head[0] + Math.cos(an) * 16, k.head[1] - 18 + Math.sin(an) * 4, 4, '#ffd23f', t * 3); }
+          text(ctx, 'Бесконечная петля!', W * 0.5, H * 0.12, 15, '#8b6bff', { stroke: 5, alpha: land });
+        }
       } },
     { id: 'fat-void', group: 'fatal', title: '🕳️ Деление на ноль', where: 'Чёрная дыра «÷0» закручивает соперника и выплёвывает конфетти', trigger: 'легендарная · 2 500 ⚡', dur: 4.4, wide: true,
       draw(ctx, W, H, t) {
