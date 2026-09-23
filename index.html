@@ -167,7 +167,7 @@
         <span>МАТБАТЛ · АНИМАЦИИ</span>
       </div>
       <h1>Стикмены <span class="accent">Матбатла</span></h1>
-      <p class="lead">Версия 6 — настоящие подтягивания и снова «Выбегает и машет». Версия 5 — удары, пинки и апперкот теперь достают до цели, движения плавнее, сальто вокруг центра, подарок открывается руками; добавлены стикер от бота и реакции без текста. Гардероб — кнопка в студии справа. Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
+      <p class="lead">Версия 7 — фаталити: шесть покупаемых добиваний без жестокости. Версия 6 — настоящие подтягивания и снова «Выбегает и машет». Версия 5 — удары, пинки и апперкот теперь достают до цели, движения плавнее, сальто вокруг центра, подарок открывается руками; добавлены стикер от бота и реакции без текста. Гардероб — кнопка в студии справа. Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
       <div class="howto">
         <span>👍 / 👎 — голос виден всей команде</span>
         <span>Комментарий — что поменять</span>
@@ -243,7 +243,7 @@
   const ITEMS = [['none', 'без'], ['cape', 'плащ'], ['scarf', 'шарф']];
   const FACES = [['smile', 'улыбка'], ['fierce', 'боевое'], ['glasses', 'очки']];
   const OPPONENT = { color: '#ff5c7a', accent: '#8b6bff', hat: 'band', item: 'none', face: 'fierce', hand: 'none', effect: 'none', line: 'solid' };
-  const DEFAULT_LOOK = { color: '#c8f53c', accent: '#ff5c7a', hat: 'cap', item: 'cape', face: 'smile', hand: 'none', effect: 'none', line: 'solid' };
+  const DEFAULT_LOOK = { color: '#c8f53c', accent: '#ff5c7a', hat: 'cap', item: 'cape', face: 'smile', hand: 'none', effect: 'none', line: 'solid', fatality: 'none' };
 
   // Каталог гардероба: [значение, название, значок, редкость, цена в ⚡]. Цены — черновик для магазина.
   const RARITY = { common: ['обычная', '#9b93b2'], uncommon: ['необычная', '#4ade80'], rare: ['редкая', '#4fd8ff'], epic: ['эпическая', '#8b6bff'], legendary: ['легендарная', '#ffd23f'] };
@@ -268,6 +268,10 @@
     { key: 'effect', title: 'Эффект', items: [
       ['none', 'Без эффекта', '·', 'common', 0], ['sparks', 'Искры', '✨', 'uncommon', 300], ['snow', 'Снежинки', '❄️', 'rare', 450],
       ['aura', 'Аура', '🔮', 'epic', 900], ['fire', 'Огонь', '🔥', 'epic', 950], ['rainbow', 'Радуга', '🌈', 'legendary', 1600] ] },
+    { key: 'fatality', title: 'Фаталити', items: [
+      ['none', 'Без фаталити', '·', 'common', 0], ['sqrt', 'Корень из соперника', '√', 'epic', 900], ['ice', 'Абсолютный ноль', '🧊', 'epic', 1100],
+      ['gift', 'Упакован!', '🎁', 'epic', 1200], ['bolt', 'E = mc²', '⚡', 'legendary', 1800], ['rocket', 'Пи-ракета', '🚀', 'legendary', 2000],
+      ['void', 'Деление на ноль', '🕳️', 'legendary', 2500] ] },
     { key: 'line', title: 'Стиль линий', items: [
       ['solid', 'Обычные', '✏️', 'common', 0], ['thick', 'Жирные', '🖊️', 'uncommon', 200], ['neon', 'Неон', '💡', 'epic', 850] ] },
   ];
@@ -437,10 +441,12 @@
       () => poly(ctx, [k.hip, k.ll[0], k.ll[1]], look.color, 4.2 * lw * s / 1.5, 0.55),
       () => poly(ctx, [k.sh, k.la[0], k.la[1]], look.color, 4.2 * lw * s / 1.5, 0.55),
       () => poly(ctx, [k.hip, k.sh], look.color, 4.6 * lw * s / 1.5),
+      // Одежда ложится на торс: задняя рука под ней, передняя рука и нога — поверх.
+      () => { if (full) { const blur = ctx.shadowBlur; ctx.shadowBlur = 0; frontItems(ctx, k, look, t); ctx.shadowBlur = blur; } },
       () => poly(ctx, [k.hip, k.rl[0], k.rl[1]], look.color, 4.6 * lw * s / 1.5),
       () => poly(ctx, [k.sh, k.ra[0], k.ra[1]], look.color, 4.6 * lw * s / 1.5),
     ];
-    if (o.noArms) { segs.splice(4, 1); segs.splice(1, 1); }
+    if (o.noArms) { segs.splice(5, 1); segs.splice(1, 1); }
     const shown = Math.floor(reveal * (segs.length + 1));
     segs.slice(0, shown).forEach((draw) => draw());
     if (o.gloves && reveal >= 1) {
@@ -451,7 +457,6 @@
       ctx.globalAlpha = o.alpha ?? 1;
     }
     ctx.shadowBlur = 0;
-    if (full) frontItems(ctx, k, look, t);
     if (full && !o.noArms && !o.gloves) handItem(ctx, k, look, t);
     if (shown >= 1 || full) head(ctx, k, look, o, t);
     if (full && look.item === 'scarf') scarf(ctx, k, t);
@@ -861,6 +866,7 @@
     { id: 'battle', title: 'Батл — полоса внизу экрана', note: 'Стикмены дерутся под задачей и реагируют на ответы.', wide: true },
     { id: 'break', title: 'Пауза между раундами', note: '10 секунд с правильным ответом.' },
     { id: 'result', title: 'Итог матча', note: 'Экран результата. Ничьих нет — см. правила матча.' },
+    { id: 'fatal', title: 'Фаталити — добивания за ⚡', note: 'Покупаются в магазине и играют после победного раунда. Без жестокости: соперника не ранят, а комично выводят из игры математикой.', wide: true },
     { id: 'meta', title: 'Профиль, магазин, подарки', note: 'Мета-игра: всё, где виден персонаж.' },
     { id: 'social', title: 'Бот и общение', note: 'Уведомления в чате MAX и реакции без текста.' },
   ];
@@ -1343,6 +1349,142 @@
       } },
   );
 
+  /** Туча из кругов — для молнии и снегопада. */
+  function cloud(ctx, x, y, r, alpha = 1) {
+    ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = '#3a2f52';
+    [[-1.1, 0.2, 0.7], [-0.4, -0.3, 0.95], [0.5, -0.2, 0.85], [1.1, 0.25, 0.65], [0, 0.3, 0.9]].forEach(([dx, dy, rr]) => { ctx.beginPath(); ctx.arc(x + dx * r, y + dy * r, rr * r, 0, Math.PI * 2); ctx.fill(); });
+    ctx.restore();
+  }
+  /** Соперник, искажённый вокруг точки опоры: масштаб, поворот, сдвиг, дрожь. */
+  function opponentAt(ctx, pose, x, g, o = {}) {
+    ctx.save();
+    const py = g - (o.pivotUp ?? 0);
+    ctx.translate(x + (o.dx ?? 0), py + (o.dy ?? 0)); ctx.rotate(o.rot ?? 0); ctx.scale(o.scale ?? 1, o.scale ?? 1); ctx.translate(-x, -py);
+    const k = figure(ctx, pose, x, g, { t: o.t, f: -1, look: OPPONENT, gloves: true, s: 1.3, mood: o.mood ?? 'ko', alpha: o.alpha });
+    ctx.restore();
+    return k;
+  }
+  const winnerPose = (T, gesture) => keys([[0, P.guard], [0.35, gesture], [2.2, gesture], [2.6, P.armsUp], [4, P.armsUp]], T);
+
+  const FATAL = [
+    { id: 'fat-sqrt', group: 'fatal', title: '√ Корень из соперника', where: 'Огромный знак корня падает сверху — соперник сжимается под ним', trigger: 'эпическая · 900 ⚡', dur: 4, wide: true,
+      draw(ctx, W, H, t) {
+        const g = H * 0.88, T = t % 4, xB = W * 0.66; ground(ctx, W, g);
+        figure(ctx, winnerPose(T, P.point), W * 0.3, g, { t, gloves: true, s: 1.3 });
+        const drop = ease(clamp01((T - 0.4) / 0.4)), shrink = lerp(1, 0.32, ease(clamp01((T - 0.9) / 0.8)));
+        opponentAt(ctx, P.hit, xB, g, { t, scale: shrink, mood: 'wow' });
+        // Знак корня: галочка слева и крыша над соперником.
+        const top = lerp(-120, g - 118, drop);
+        ctx.save(); ctx.strokeStyle = '#c8f53c'; ctx.lineWidth = 7; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.shadowColor = '#c8f53c'; ctx.shadowBlur = 12;
+        ctx.beginPath(); ctx.moveTo(xB - 62, top + 70); ctx.lineTo(xB - 50, top + 62); ctx.lineTo(xB - 34, top + 112); ctx.lineTo(xB - 16, top); ctx.lineTo(xB + 56, top); ctx.stroke(); ctx.restore();
+        if (drop >= 1 && T < 1.1) burst(ctx, xB - 34, g - 6, 20, '#ffd23f', 1 - (T - 0.8) / 0.3);
+        if (T > 1.8) text(ctx, '√соперник = 0', W * 0.5, H * 0.14, 16, '#c8f53c', { stroke: 5, alpha: clamp01((T - 1.8) * 3) });
+      } },
+    { id: 'fat-ice', group: 'fatal', title: '🧊 Абсолютный ноль', where: 'Снегопад — соперник дрожит и вмерзает в кубик льда', trigger: 'эпическая · 1 100 ⚡', dur: 4, wide: true,
+      draw(ctx, W, H, t) {
+        const g = H * 0.88, T = t % 4, xB = W * 0.66; ground(ctx, W, g);
+        figure(ctx, winnerPose(T, P.stretchA), W * 0.3, g, { t, gloves: true, s: 1.3 });
+        const snow = clamp01(T / 0.4) * clamp01((3.8 - T) / 0.3);
+        ctx.save(); ctx.fillStyle = '#f5f3fa';
+        for (let i = 0; i < 40; i++) { const y = (t * (30 + rnd(i) * 30) + rnd(i + 1) * H) % H, x = xB - 70 + rnd(i + 2) * 140 + osc(t + i, 2, 4); ctx.globalAlpha = snow * 0.8; ctx.beginPath(); ctx.arc(x, y, 1.2 + rnd(i + 3) * 1.6, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore();
+        const freeze = ease(clamp01((T - 1.2) / 0.6)), shiver = T > 0.4 && T < 1.4 ? osc(t, 0.06, 2) : 0;
+        opponentAt(ctx, freeze > 0 ? P.stand : P.hit, xB, g, { t, dx: shiver, mood: 'wow' });
+        if (freeze > 0) {
+          ctx.save(); ctx.globalAlpha = freeze;
+          ctx.fillStyle = 'rgba(79,216,255,0.28)'; ctx.strokeStyle = 'rgba(191,240,255,0.9)'; ctx.lineWidth = 2;
+          roundRect(ctx, xB - 42, g - 130, 84, 130, 10); ctx.fill(); ctx.stroke();
+          ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(xB - 30, g - 116); ctx.lineTo(xB - 16, g - 100); ctx.stroke();
+          ctx.restore();
+          text(ctx, '0°', xB + 30, g - 116, 14, '#4fd8ff', { stroke: 4, alpha: freeze });
+        }
+        if (T > 2) text(ctx, 'Заморожен!', W * 0.3, H * 0.12, 16, '#4fd8ff', { stroke: 5, alpha: clamp01((T - 2) * 3) });
+      } },
+    { id: 'fat-gift', group: 'fatal', title: '🎁 Упакован!', where: 'На соперника опускается коробка, сверху крышка и бант', trigger: 'эпическая · 1 200 ⚡', dur: 4, wide: true,
+      draw(ctx, W, H, t) {
+        const g = H * 0.88, T = t % 4, xB = W * 0.66; ground(ctx, W, g);
+        figure(ctx, winnerPose(T, keys([[0, P.clapA], [0.2, P.clapB], [0.4, P.clapA]], T % 0.4)), W * 0.3, g, { t, gloves: false, s: 1.3 });
+        const cover = ease(clamp01((T - 0.5) / 0.5));
+        if (cover < 1) opponentAt(ctx, P.hit, xB, g, { t, mood: 'wow' });
+        const bw = 92, bh = 126, by = lerp(-bh - 20, g - bh, cover);
+        ctx.fillStyle = '#8b6bff'; ctx.fillRect(xB - bw / 2, by, bw, bh);
+        ctx.fillStyle = '#ff5c7a'; ctx.fillRect(xB - 6, by, 12, bh);
+        if (T > 1.1) {
+          const lid = ease(clamp01((T - 1.1) / 0.3));
+          ctx.fillStyle = '#9d80ff'; ctx.fillRect(xB - bw / 2 - 5, g - bh - 12 - (1 - lid) * 40, bw + 10, 14);
+          ctx.fillStyle = '#ff5c7a'; ctx.fillRect(xB - 6, g - bh - 12 - (1 - lid) * 40, 12, 14);
+        }
+        if (T > 1.5) {
+          const bow = ease(clamp01((T - 1.5) / 0.3)), y = g - bh - 14;
+          ctx.fillStyle = '#ff5c7a';
+          for (const d of [-1, 1]) { ctx.beginPath(); ctx.ellipse(xB + d * 14 * bow, y - 8 * bow, 14 * bow, 9 * bow, d * 0.5, 0, Math.PI * 2); ctx.fill(); }
+          ctx.beginPath(); ctx.arc(xB, y - 4, 6 * bow, 0, Math.PI * 2); ctx.fill();
+          if (T < 2.6) for (let i = 0; i < 5; i++) sparkle(ctx, xB + Math.cos(i * 1.3) * 60, y + Math.sin(i * 1.7) * 50, 5, 1 - (T - 1.5));
+        }
+        if (T > 2) text(ctx, 'Упакован!', W * 0.3, H * 0.12, 16, '#ff5c7a', { stroke: 5, alpha: clamp01((T - 2) * 3) });
+      } },
+    { id: 'fat-bolt', group: 'fatal', title: '⚡ E = mc²', where: 'Туча, молния — соперник с торчащими волосами и дымком', trigger: 'легендарная · 1 800 ⚡', dur: 4, wide: true,
+      draw(ctx, W, H, t) {
+        const g = H * 0.88, T = t % 4, xB = W * 0.66; ground(ctx, W, g);
+        figure(ctx, winnerPose(T, P.medal), W * 0.3, g, { t, gloves: true, s: 1.3 });
+        const cl = ease(clamp01(T / 0.4)) * clamp01((3.8 - T) / 0.3);
+        cloud(ctx, xB, 22, 22, cl);
+        const strike = T > 0.7 && T < 1.0;
+        if (strike) {
+          ctx.save(); ctx.fillStyle = 'rgba(255,255,255,0.25)'; ctx.fillRect(0, 0, W, H);
+          ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 5; ctx.shadowColor = '#ffd23f'; ctx.shadowBlur = 16; ctx.lineJoin = 'miter';
+          ctx.beginPath(); ctx.moveTo(xB, 36); ctx.lineTo(xB - 12, 70); ctx.lineTo(xB + 6, 74); ctx.lineTo(xB - 8, g - 110); ctx.stroke(); ctx.restore();
+        }
+        const k = opponentAt(ctx, T > 0.7 ? P.stand : P.hit, xB, g, { t, mood: 'ko', dx: T > 0.7 && T < 1.3 ? osc(t, 0.05, 2) : 0 });
+        if (T > 0.9) {
+          // Волосы дыбом и дымок.
+          ctx.save(); ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2.4;
+          for (let i = 0; i < 7; i++) { const a = Math.PI * (1.1 + i * 0.13), r = BONES.head * 1.3; ctx.beginPath(); ctx.moveTo(k.head[0] + Math.cos(a) * r, k.head[1] + Math.sin(a) * r); ctx.lineTo(k.head[0] + Math.cos(a) * r * 1.7, k.head[1] + Math.sin(a) * r * 1.7); ctx.stroke(); }
+          ctx.restore();
+          for (let i = 0; i < 4; i++) { const ph = ((t * 0.8 + i * 0.25) % 1); ctx.fillStyle = `rgba(155,147,178,${0.5 * (1 - ph)})`; ctx.beginPath(); ctx.arc(k.head[0] + osc(t + i, 1, 6), k.head[1] - 20 - ph * 40, 5 + ph * 8, 0, Math.PI * 2); ctx.fill(); }
+        }
+        if (T > 1.6) text(ctx, 'E = mc²', W * 0.5, H * 0.14, 17, '#ffd23f', { stroke: 5, alpha: clamp01((T - 1.6) * 3) });
+      } },
+    { id: 'fat-rocket', group: 'fatal', title: '🚀 Пи-ракета', where: 'Соперник садится на ракету в форме π и улетает к звёздам', trigger: 'легендарная · 2 000 ⚡', dur: 4.2, wide: true,
+      draw(ctx, W, H, t) {
+        const g = H * 0.88, T = t % 4.2, xB = W * 0.66; ground(ctx, W, g);
+        const wave = keys([[0, P.guard], [0.4, P.stand], [1.6, P.wave1], [1.9, P.wave2], [2.2, P.wave1], [2.5, P.wave2], [2.8, P.wave1], [4.2, P.stand]], T);
+        figure(ctx, wave, W * 0.3, g, { t, s: 1.3 });
+        const slide = ease(clamp01((T - 0.3) / 0.5)), launch = clamp01((T - 1.4) / 1.4), lift = launch * launch * (H + 160);
+        const rx = lerp(W + 60, xB, slide), ry = g - 26 - lift;
+        // Ракета-π: перекладина — корпус, две ноги — сопла с пламенем.
+        ctx.save(); ctx.fillStyle = '#8b6bff';
+        roundRect(ctx, rx - 34, ry - 6, 68, 12, 6); ctx.fill();
+        ctx.fillRect(rx - 20, ry + 4, 9, 22); ctx.fillRect(rx + 12, ry + 4, 9, 22);
+        ctx.fillStyle = '#f5f3fa'; ctx.beginPath(); ctx.moveTo(rx + 34, ry - 6); ctx.lineTo(rx + 48, ry); ctx.lineTo(rx + 34, ry + 6); ctx.fill();
+        if (T > 1.2) for (let i = 0; i < 10; i++) { const ph = (t * 3 + rnd(i)) % 1; ctx.fillStyle = ph < 0.4 ? '#ffd23f' : '#ff5c7a'; ctx.globalAlpha = 1 - ph; ctx.beginPath(); ctx.arc(rx + (i % 2 ? 16 : -16) + (rnd(i + 4) - 0.5) * 6, ry + 30 + ph * 26, 5 * (1 - ph) + 2, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore();
+        if (T < 1.0) opponentAt(ctx, P.hit, xB, g, { t, mood: 'wow' });
+        else opponentAt(ctx, P.sit, rx, ry - 6 + (BONES.thigh + BONES.shin - 17) * 1.3 * 0 + 30, { t, mood: 'wow' });
+        if (T > 2.9) { const k2 = clamp01((T - 2.9) / 0.4); star(ctx, xB + 20, 24, 8 * k2 + osc(t, 0.3, 1.5), '#ffd23f', t); text(ctx, 'Улетел!', W * 0.5, H * 0.14, 16, '#c8f53c', { stroke: 5, alpha: k2 }); }
+      } },
+    { id: 'fat-void', group: 'fatal', title: '🕳️ Деление на ноль', where: 'Чёрная дыра «÷0» закручивает соперника и выплёвывает конфетти', trigger: 'легендарная · 2 500 ⚡', dur: 4.4, wide: true,
+      draw(ctx, W, H, t) {
+        const g = H * 0.88, T = t % 4.4, xB = W * 0.66, hy = g - 70; ground(ctx, W, g);
+        figure(ctx, winnerPose(T, P.shrug), W * 0.3, g, { t, gloves: true, s: 1.3 });
+        const open = ease(clamp01((T - 0.3) / 0.5)) * (1 - ease(clamp01((T - 3.3) / 0.4)));
+        if (open > 0) {
+          const r = 46 * open, grad = ctx.createRadialGradient(xB, hy, 2, xB, hy, r);
+          grad.addColorStop(0, '#000'); grad.addColorStop(0.7, '#130d24'); grad.addColorStop(1, 'rgba(139,107,255,0)');
+          ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(xB, hy, r, 0, Math.PI * 2); ctx.fill();
+          ctx.save(); ctx.translate(xB, hy); ctx.rotate(t * 3); ctx.strokeStyle = '#8b6bff'; ctx.lineWidth = 3;
+          for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(0, 0, r * (0.55 + i * 0.18), i * 2, i * 2 + 2.2); ctx.stroke(); }
+          ctx.restore();
+          text(ctx, '÷0', xB, hy + 1, 16 * open, '#f5f3fa', { alpha: open });
+        }
+        // Соперника затягивает по спирали: поворачивается, уменьшается и смещается к центру дыры.
+        const pull = ease(clamp01((T - 0.9) / 1.4));
+        if (pull < 1) opponentAt(ctx, P.hit, xB, g, { t, rot: pull * 9, scale: 1 - pull, pivotUp: 55, dy: -pull * (g - 55 - hy), mood: 'wow' });
+        if (T > 2.5 && T < 3.6) { const k2 = (T - 2.5) / 1.1; for (let i = 0; i < 24; i++) { const a = rnd(i) * Math.PI * 2, d = k2 * (30 + rnd(i + 1) * 60); ctx.save(); ctx.globalAlpha = 1 - k2; ctx.fillStyle = ['#c8f53c', '#ff5c7a', '#4fd8ff', '#ffd23f'][i % 4]; ctx.translate(xB + Math.cos(a) * d, hy + Math.sin(a) * d); ctx.rotate(t * 4 + i); ctx.fillRect(-3, -1.5, 6, 3); ctx.restore(); } }
+        if (T > 2.6) text(ctx, 'Деление на ноль!', W * 0.5, H * 0.12, 15, '#8b6bff', { stroke: 5, alpha: clamp01((T - 2.6) * 3) });
+      } },
+  ];
+
   const IDEAS = [
   ];
 
@@ -1392,7 +1534,7 @@
 
   // ═══ Карточки ══════════════════════════════════════════════════════════════
 
-  SCENES.push(...SOCIAL);
+  SCENES.push(...SOCIAL, ...FATAL);
   const cards = [];
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -1523,7 +1665,7 @@
 
   const dialog = document.getElementById('wardrobe');
   const wrCanvas = document.getElementById('wr-canvas');
-  const POSES = [['idle', 'Стойка'], ['run', 'Бег'], ['fight', 'Бой'], ['win', 'Победа']];
+  const POSES = [['idle', 'Стойка'], ['run', 'Бег'], ['fight', 'Бой'], ['win', 'Победа'], ['fatal', 'Фаталити']];
   let wrTab = 'colors', wrPose = 'idle', wrT = 0;
 
   function saveLook() { store.set('stickman.me', me); syncStudio(); renderWardrobe(); }
@@ -1559,7 +1701,7 @@
       panel.replaceChildren(el('div', { class: 'wr-items' }, ...cat.items.map(([value, name, icon, rarity, price]) => {
         const [rarityName, rarityColor] = RARITY[rarity];
         const dot = el('span', { class: 'rar' }); dot.style.background = rarityColor;
-        return el('button', { class: 'wr-item', type: 'button', 'aria-pressed': String(me[cat.key] === value), onclick: () => { me[cat.key] = value; saveLook(); } },
+        return el('button', { class: 'wr-item', type: 'button', 'aria-pressed': String(me[cat.key] === value), onclick: () => { me[cat.key] = value; if (cat.key === 'fatality') { wrPose = value === 'none' ? 'idle' : 'fatal'; wrT = 0; } saveLook(); } },
           el('span', { class: 'ico', textContent: icon }), el('span', { class: 'nm', textContent: name }),
           el('span', { class: 'meta2' }, dot, rarityName + (price ? ` · ${price} ⚡` : ' · бесплатно')));
       })));
@@ -1581,6 +1723,16 @@
     const k = W / 240; ctx.save(); ctx.scale(k, k);
     const w = 240, h = H / k, g = h * 0.86;
     ctx.fillStyle = '#17131f'; ctx.beginPath(); ctx.ellipse(w / 2, g, 62, 9, 0, 0, Math.PI * 2); ctx.fill();
+    if (wrPose === 'fatal') {
+      const scene = FATAL.find((x) => x.id === 'fat-' + me.fatality);
+      if (scene) {
+        // Сцена рассчитана на широкое полотно 420×184 — вписываем её по ширине.
+        const k2 = w / 420; ctx.save(); ctx.translate(0, h / 2 - (184 * k2) / 2); ctx.scale(k2, k2);
+        scene.draw(ctx, 420, 184, wrT); ctx.restore();
+      } else text(ctx, 'Выберите фаталити во вкладке «Фаталити»', w / 2, h / 2, 9, '#9b93b2', { weight: 500 });
+      ctx.restore();
+      return;
+    }
     let pose;
     if (wrPose === 'run') pose = runPose(wrT);
     else if (wrPose === 'fight') pose = keys([[0, P.guard], [0.3, P.punch], [0.6, P.guard], [0.9, P.cross], [1.2, P.guard], [1.6, P.guard2], [2, P.guard]], wrT % 2);
