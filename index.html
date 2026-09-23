@@ -167,7 +167,7 @@
         <span>МАТБАТЛ · АНИМАЦИИ</span>
       </div>
       <h1>Стикмены <span class="accent">Матбатла</span></h1>
-      <p class="lead">Версия 5 — удары, пинки и апперкот теперь достают до цели, движения плавнее, сальто вокруг центра, подарок открывается руками; добавлены стикер от бота и реакции без текста. Гардероб — кнопка в студии справа. Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
+      <p class="lead">Версия 6 — настоящие подтягивания и снова «Выбегает и машет». Версия 5 — удары, пинки и апперкот теперь достают до цели, движения плавнее, сальто вокруг центра, подарок открывается руками; добавлены стикер от бота и реакции без текста. Гардероб — кнопка в студии справа. Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
       <div class="howto">
         <span>👍 / 👎 — голос виден всей команде</span>
         <span>Комментарий — что поменять</span>
@@ -873,6 +873,23 @@
 
   const SCENES = [
     // ─── Вход ───
+    { id: 'hello', fixed: 'Бег из 8 фаз, приветствие на 12 языках', group: 'enter', title: 'Выбегает и машет', where: 'Первый экран после открытия из MAX; приветствие каждый раз на новом языке', trigger: 'при входе', dur: 4,
+      draw(ctx, W, H, t) {
+        const g = H * 0.82; ground(ctx, W, g);
+        const T = t % 4, runEnd = 1.3, x = lerp(-30, W * 0.5, ease(clamp01(T / runEnd)));
+        const pose = T < runEnd ? runPose(T)
+          : keys([[runEnd, P.stand], [1.5, P.wave1], [1.75, P.wave2], [2, P.wave1], [2.25, P.wave2], [2.5, P.wave1], [2.9, P.stand], [4, P.stand]], T);
+        if (T < runEnd) dust(ctx, x, g, T);
+        figure(ctx, pose, x, g, { t });
+        // Каждый выход — новое приветствие.
+        const [hi, lang] = GREETINGS[Math.floor(t / 4) % GREETINGS.length];
+        const fade = clamp01((T - 1.6) * 4) * clamp01((3.2 - T) * 4);
+        if (T > 1.6 && T < 3.2) {
+          text(ctx, hi, x + 58, g - 92, 15, '#f5f3fa', { alpha: fade });
+          text(ctx, lang, x + 58, g - 74, 9, '#9b93b2', { alpha: fade, weight: 500 });
+        }
+      } },
+
     { id: 'assemble', fixed: 'Прыжок с замахом и мягким приземлением', group: 'enter', title: 'Собирается из линий', where: 'После регистрации: «вот твой персонаж»', trigger: 'один раз', dur: 3.2,
       draw(ctx, W, H, t) {
         const g = H * 0.84, T = t % 3.2; ground(ctx, W, g);
@@ -954,14 +971,38 @@
         text(ctx, `${Math.round(p * 100)}%`, bx + barW / 2, barY + barH / 2 + 0.5, 10, p > 0.5 ? '#0d0b14' : '#f5f3fa', { weight: 700 });
         for (let i = 0; i < 3; i++) { const lx = bx - reach - 30 - i * 16 - (T * 60) % 16; ctx.strokeStyle = '#3a2f52'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(lx, g - 30 - i * 14); ctx.lineTo(lx - 14, g - 30 - i * 14); ctx.stroke(); }
       } },
-    { id: 'hangBar', group: 'load', title: 'Подтягивается на полоске', where: 'Загрузка перед матчем', trigger: 'пока ждём', dur: 1.6,
+    { id: 'hangBar', fixed: 'Настоящие подтягивания: локти сгибаются, подбородок над перекладиной', group: 'load', title: 'Подтягивается на полоске', where: 'Загрузка перед матчем', trigger: 'пока ждём', dur: 1.8,
       draw(ctx, W, H, t) {
-        const p = (t / 4) % 1, barY = H * 0.24;
-        bar(ctx, 40, barY, W - 80, 14, p);
-        const up = (Math.sin(t / 1.6 * Math.PI * 2) + 1) / 2;
-        const pose = mix(P.hang, P.pull, up);
-        const bodyLen = (BONES.torso + BONES.thigh + BONES.shin + BONES.upper + BONES.fore) * 1.2;
-        figure(ctx, pose, W / 2, barY + bodyLen - up * 14, { t, s: 1.2 });
+        const REP = 1.8, s = 1.3, rep = Math.floor(t / REP), T = t % REP;
+        const barY = H * 0.2, l1 = BONES.upper * s, l2 = BONES.fore * s;
+        // Полоска заполняется с каждым подтягиванием.
+        const p = ((rep % 10) + ease(clamp01((T - 0.2) / 0.6))) / 10;
+        bar(ctx, 30, barY - 6, W - 60, 12, p);
+        // Фаза: 0 — висит на прямых руках, 1 — подбородок над перекладиной.
+        // Подъём 0,2–0,8 с, пауза наверху, спуск 1,0–1,6 с, внизу короткая пауза.
+        const up = T < 0.2 ? 0 : T < 0.8 ? ease((T - 0.2) / 0.6) : T < 1.0 ? 1 : T < 1.6 ? 1 - ease((T - 1.0) / 0.6) : 0;
+        const gripX = W / 2 + 8;
+        const shX = W / 2 - 2 + up * 2;
+        const shY = barY + lerp(l1 + l2 - 1.5, 6, up);
+        const pose = with_(P.hang, {
+          lean: lerp(2, -9, up), head: lerp(4, -22, up),
+          rl: [lerp(14, 34, up), lerp(60, 84, up)], ll: [lerp(-2, 16, up), lerp(72, 92, up)],
+        });
+        // Тело строится от плеча: ноги висят ниже бёдер.
+        const hipY = shY + BONES.torso * s * Math.cos(rad(pose.lean));
+        const g = hipY + (BONES.thigh + BONES.shin) * s;
+        const bodyX = shX - Math.sin(rad(pose.lean)) * BONES.torso * s;
+        figure(ctx, pose, bodyX, g, { t, s, noArms: true });
+        // Руки: кисти держат перекладину, локти сгибаются вперёд-вниз, как в профиль у человека.
+        const k = skeleton(pose, bodyX, g, s, 1), sh = k.sh;
+        [[gripX + 3, 0.55], [gripX, 1]].forEach(([hx, alpha]) => {
+          const hand = [hx, barY];
+          const el = elbow(sh, hand, l1, l2, 1);
+          poly(ctx, [sh, el, hand], me.color, 4.6 * s / 1.5, alpha);
+          ctx.save(); ctx.globalAlpha = alpha; ctx.fillStyle = me.color; ctx.beginPath(); ctx.arc(hand[0], hand[1], 3.2 * s / 1.5 + 1, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        });
+        text(ctx, `×${(rep % 10) + (T >= 0.8 ? 1 : 0)}`, W - 36, barY + 34, 14, '#c8f53c');
+        text(ctx, `${Math.round(p * 100)}%`, W / 2, barY - 20, 10, '#9b93b2', { weight: 700 });
       } },
 
     // ─── Поиск ───
@@ -1234,9 +1275,75 @@
       } },
   ];
 
+  SOCIAL.push(
+    { id: 'weekCartoon', group: 'social', title: 'Мультик недели', where: 'Раз в неделю: лучшие моменты игрока, можно переслать в чат', trigger: 'раз в неделю', dur: 4.5,
+      draw(ctx, W, H, t) {
+        const T = t % 4.5, clip = Math.floor(T / 1.5), local = T % 1.5;
+        // Киноплёнка: перфорация сверху и снизу, внутри — один из трёх моментов недели.
+        ctx.fillStyle = '#131019'; ctx.fillRect(14, 20, W - 28, H - 40);
+        ctx.fillStyle = '#2a2338';
+        for (let x = 20 + ((t * 40) % 18); x < W - 20; x += 18) { ctx.fillRect(x, 24, 9, 6); ctx.fillRect(x, H - 30, 9, 6); }
+        const fx = 22, fy = 36, fw = W - 44, fh = H - 72;
+        ctx.save(); ctx.beginPath(); ctx.rect(fx, fy, fw, fh); ctx.clip();
+        ctx.fillStyle = '#0d0b14'; ctx.fillRect(fx, fy, fw, fh);
+        const g = fy + fh - 10, s = 0.95;
+        ground(ctx, W, g);
+        if (clip === 0) {
+          const xA = W * 0.36, xB = contactX(P.jab, xA, 1, (k) => k.ra[1], P.guard, -1, faceOf, g, s);
+          const a = keys([[0, P.guard], [0.4, P.jab], [0.9, P.jab], [1.5, P.guard]], local);
+          figure(ctx, a, xA, g, { t, s, gloves: true });
+          figure(ctx, local > 0.45 && local < 1 ? P.hit : P.guard, xB + (local > 0.45 && local < 1 ? 8 : 0), g, { t, s, f: -1, look: OPPONENT, gloves: true, mood: local > 0.45 ? 'wow' : undefined });
+          if (local > 0.4 && local < 0.9) burst(ctx, xB - 6, g - 58, 12, '#ffd23f', 1 - (local - 0.4) / 0.5);
+        } else if (clip === 1) {
+          confetti(ctx, W, H, t, 20);
+          figure(ctx, keys([[0, P.crouch], [0.3, P.jump], [0.7, P.armsUp], [1.1, P.crouch], [1.5, P.crouch]], local), W / 2, g, { t, s });
+        } else {
+          const r = Math.round(lerp(1212, 1266, ease(clamp01(local / 1.1))));
+          text(ctx, String(r), W / 2 + 34, fy + fh / 2 - 6, 26, '#c8f53c', { stroke: 4 });
+          text(ctx, '▲ +54', W / 2 + 34, fy + fh / 2 + 18, 11, '#9b93b2', { weight: 700 });
+          figure(ctx, local < 1.1 ? keys([[0, P.climb1], [0.33, P.climb2], [0.66, P.climb1]], local % 0.66) : P.armsUp, W * 0.3, g, { t, s });
+        }
+        // Шторка между моментами.
+        const wipe = local < 0.12 ? 1 - local / 0.12 : 0;
+        if (wipe > 0) { ctx.fillStyle = '#0d0b14'; ctx.fillRect(fx, fy, fw * wipe, fh); }
+        ctx.restore();
+        text(ctx, 'Твоя неделя', 24, 12, 10, '#f5f3fa', { align: 'left', weight: 700 });
+        text(ctx, ['Лучший удар', 'Победа 2:0', 'Рейтинг растёт'][clip], W - 24, 12, 9, '#9b93b2', { align: 'right', weight: 500 });
+        text(ctx, '5 побед · 12 задач · +54', W / 2, H - 10, 9, '#9b93b2', { weight: 500 });
+      } },
+    { id: 'schoolCrowd', group: 'social', title: 'Толпа школы', where: 'Рейтинг школ: чем активнее школа, тем больше толпа', trigger: 'фон', dur: 2,
+      draw(ctx, W, H, t) {
+        const base = H * 0.94;
+        // Пьедестал: второе место слева, первое в центре, третье справа.
+        const schools = [
+          { place: 2, name: '№2', color: '#4fd8ff', size: 6, x: W * 0.2, h: 30 },
+          { place: 1, name: '№25', color: '#c8f53c', size: 9, x: W * 0.5, h: 44 },
+          { place: 3, name: '№146', color: '#ffb23f', size: 4, x: W * 0.8, h: 20 },
+        ];
+        for (const sc of schools) {
+          ctx.fillStyle = '#211b2e'; ctx.fillRect(sc.x - 40, base - sc.h, 80, sc.h);
+          text(ctx, String(sc.place), sc.x, base - sc.h / 2, 14, '#6f6689');
+          const g = base - sc.h;
+          // Толпа: два ряда маленьких стикменов, ликуют волной.
+          for (let i = 0; i < sc.size; i++) {
+            const row = i % 2, col = Math.floor(i / 2), cols = Math.ceil(sc.size / 2);
+            const x = sc.x - (cols - 1) * 7 + col * 14 + row * 5;
+            const cheer = Math.max(0, Math.sin(t * 5 - col * 0.7 - sc.place));
+            const pose = mix(P.stand, P.armsUp, cheer);
+            figure(ctx, with_(pose, { dy: cheer * 4 }), x, g - row * 3, { t, s: 0.42, look: { color: sc.color, hat: 'none', item: 'none', face: 'smile', line: 'solid' }, alpha: row ? 0.6 : 1 });
+          }
+          // Флаг школы над толпой.
+          const top = g - 58;
+          ctx.strokeStyle = '#c4bbdd'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(sc.x + 30, g - 4); ctx.lineTo(sc.x + 30, top); ctx.stroke();
+          ctx.fillStyle = sc.color; ctx.beginPath(); ctx.moveTo(sc.x + 30, top);
+          ctx.quadraticCurveTo(sc.x + 44, top + 3 + osc(t, 0.6, 2), sc.x + 60, top + 5 + osc(t, 0.5, 2)); ctx.lineTo(sc.x + 30, top + 16); ctx.closePath(); ctx.fill();
+          text(ctx, sc.name, sc.x + 41, top + 7, 7, '#0d0b14', { weight: 700 });
+        }
+        text(ctx, 'Рейтинг школ', W / 2, 12, 11, '#f5f3fa', { weight: 700 });
+      } },
+  );
+
   const IDEAS = [
-    { id: 'idea-school', title: 'Толпа школы', text: 'В рейтинге школ каждая школа — толпа стикменов её учеников с флагом; чем активнее школа, тем больше толпа.' },
-    { id: 'idea-week', title: 'Мультик недели', text: 'Раз в неделю — 10-секундный ролик из лучших моментов игрока: победы, достижения, рост рейтинга.' },
   ];
 
   // ═══ Голоса ════════════════════════════════════════════════════════════════
@@ -1340,6 +1447,7 @@
       }
     }
     const ideas = document.getElementById('ideas');
+    document.getElementById('ideas-section').hidden = IDEAS.length === 0;
     for (const idea of IDEAS) {
       const v = voteBar(idea.id);
       const card = el('article', { class: 'idea card', 'data-id': idea.id }, el('h3', { textContent: idea.title }), el('p', { textContent: idea.text }), v.root);
