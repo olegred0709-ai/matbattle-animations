@@ -646,9 +646,23 @@
         ctx.beginPath(); ctx.arc(px + osc(t + i, 0.6, 3), py, (6 * (1 - life) + 1.5) * s, 0, Math.PI * 2); ctx.fill();
       }
     } else if (look.effect === 'rainbow') {
+      // Радужный шлейф: шесть лент тянутся волной из-за спины и тают к концу.
       const colors = ['#ff5c7a', '#ffb23f', '#ffd23f', '#4ade80', '#4fd8ff', '#8b6bff'];
-      ctx.lineWidth = 3.4 * s; ctx.globalAlpha = 0.75;
-      colors.forEach((c, i) => { ctx.strokeStyle = c; ctx.beginPath(); ctx.arc(cx - k.f * 6 * s, cy + 30 * s, (58 - i * 4) * s, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); });
+      const [ox, oy] = onTorso(k, 0.62), back = -k.f, len = 70 * s, steps = 22;
+      ctx.lineCap = 'round'; ctx.lineWidth = 2.6 * s;
+      colors.forEach((c, i) => {
+        ctx.strokeStyle = c;
+        const off = (i - 2.5) * 3 * s;
+        let prev = [ox, oy + off];
+        for (let j = 1; j <= steps; j++) {
+          const u = j / steps;
+          const wave = Math.sin(u * 5 - t * 7 + i * 0.25) * 6 * s * u;
+          const pt = [ox + back * u * len, oy + off + wave + u * u * 10 * s];
+          ctx.globalAlpha = 0.85 * (1 - u);
+          ctx.beginPath(); ctx.moveTo(prev[0], prev[1]); ctx.lineTo(pt[0], pt[1]); ctx.stroke();
+          prev = pt;
+        }
+      });
     }
     ctx.restore();
   }
