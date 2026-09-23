@@ -135,7 +135,7 @@
         <span>МАТБАТЛ · АНИМАЦИИ</span>
       </div>
       <h1>Стикмены <span class="accent">Матбатла</span></h1>
-      <p class="lead">Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
+      <p class="lead">Версия 2 — по оценкам команды: убраны 7 анимаций, поправлены 6, добавлены 3 из идей. Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
       <div class="howto">
         <span>👍 / 👎 — голос виден всей команде</span>
         <span>Комментарий — что поменять</span>
@@ -212,6 +212,13 @@
     hit:    { lean: -24, head: -18, ra: [-25, 55], la: [-45, 40], rl: [14, 24], ll: [-18, 8], dy: -3, spin: 0 },
     dodge:  { lean: -30, head: -10, ra: [20, 120], la: [0, 120], rl: [30, 40], ll: [-10, 30], dy: -8, spin: 0 },
     stumble:{ lean: 38, head: 20, ra: [110, -10], la: [60, 20], rl: [40, 30], ll: [-50, 20], dy: -4, spin: 0 },
+    cross:  { lean: 20, head: 4, ra: [30, 120], la: [92, 0], rl: [26, 12], ll: [-26, 4], dy: -2, spin: 0 },
+    duck:   { lean: 32, head: 10, ra: [40, 125], la: [30, 130], rl: [52, 90], ll: [8, 80], dy: -14, spin: 0 },
+    restArms: { lean: -14, head: -18, ra: [-118, -58], la: [-128, -48], rl: [82, 84], ll: [66, 96], dy: -17, spin: 0 },
+    tuck:   { lean: 20, head: 20, ra: [70, 100], la: [60, 110], rl: [100, 150], ll: [90, 150], dy: 0, spin: 0 },
+    point:  { lean: -4, head: -4, ra: [118, 10], la: [-12, 12], rl: [8, 0], ll: [-8, 0], dy: 0, spin: 0 },
+    whistle:{ lean: 0, head: 0, ra: [40, 140], la: [-12, 12], rl: [8, 0], ll: [-8, 0], dy: 0, spin: 0 },
+    nod:    { lean: 2, head: 14, ra: [12, 12], la: [-12, 12], rl: [5, 0], ll: [-5, 0], dy: 0, spin: 0 },
     kick:   { lean: -14, head: 0, ra: [40, 110], la: [-30, 60], rl: [98, 4], ll: [-8, 8], dy: 0, spin: 0 },
     run1:   { lean: 16, head: 4, ra: [-45, 85], la: [55, 95], rl: [55, 75], ll: [-35, 55], dy: 1, spin: 0 },
     run2:   { lean: 16, head: 4, ra: [55, 95], la: [-45, 85], rl: [-35, 55], ll: [55, 75], dy: 3, spin: 0 },
@@ -239,6 +246,28 @@
     climb2: { lean: 14, head: 0, ra: [45, 80], la: [-35, 70], rl: [-15, 20], ll: [70, 95], dy: 2, spin: 0 },
     lie:    { lean: 0, head: 0, ra: [20, 10], la: [-20, 10], rl: [8, 0], ll: [-8, 0], dy: 1, spin: -90 },
   };
+
+  // Бег: контакт → присед → проход → толчок, затем то же с другой ноги.
+  const RUN = [
+    { lean: 18, head: 4, ra: [-58, 92], la: [62, 102], rl: [48, 14], ll: [-42, 72], dy: 0, spin: 0 },
+    { lean: 21, head: 6, ra: [-40, 98], la: [44, 104], rl: [30, 38], ll: [-22, 98], dy: -3, spin: 0 },
+    { lean: 18, head: 4, ra: [4, 92], la: [4, 92], rl: [-4, 22], ll: [52, 112], dy: 2, spin: 0 },
+    { lean: 16, head: 2, ra: [52, 102], la: [-52, 92], rl: [-44, 54], ll: [60, 46], dy: 6, spin: 0 },
+  ];
+  const mirror = (p) => Object.assign({}, p, { ra: p.la, la: p.ra, rl: p.ll, ll: p.rl });
+  const RUN_CYCLE = [...RUN, ...RUN.map(mirror)];
+  /** Поза бега в момент t; период — полный двойной шаг. */
+  function runPose(t, period = 0.56) {
+    const n = RUN_CYCLE.length, x = ((t % period) / period) * n, i = Math.floor(x);
+    return mix(RUN_CYCLE[i % n], RUN_CYCLE[(i + 1) % n], x - i);
+  }
+  /** Пыль из-под ноги в момент контакта с землёй. */
+  function dust(ctx, x, g, t, period = 0.56) {
+    const phase = (t % (period / 2)) / (period / 2);
+    ctx.save(); ctx.fillStyle = `rgba(155,147,178,${0.45 * (1 - phase)})`;
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(x - 10 - phase * 18 - i * 7, g - 3 - phase * 6 - i * 2, 3 + phase * 4, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+  }
 
   const lerp = (a, b, k) => a + (b - a) * k;
   const ease = (k) => k * k * (3 - 2 * k);
@@ -488,9 +517,8 @@
     { id: 'start', title: 'Старт матча', note: 'Соперник найден, перед заставкой «Раунд 1».' },
     { id: 'battle', title: 'Батл — полоса внизу экрана', note: 'Стикмены дерутся под задачей и реагируют на ответы.', wide: true },
     { id: 'break', title: 'Пауза между раундами', note: '10 секунд с правильным ответом.' },
-    { id: 'result', title: 'Итог матча', note: 'Экран результата.' },
+    { id: 'result', title: 'Итог матча', note: 'Экран результата. Ничьих нет — см. правила матча.' },
     { id: 'meta', title: 'Профиль, магазин, подарки', note: 'Мета-игра: всё, где виден персонаж.' },
-    { id: 'system', title: 'Системные состояния', note: 'Ошибки и пустые экраны без грусти.' },
   ];
 
   const SCENES = [
@@ -499,8 +527,9 @@
       draw(ctx, W, H, t) {
         const g = H * 0.82; ground(ctx, W, g);
         const T = t % 4, runEnd = 1.3, x = lerp(-30, W * 0.5, ease(clamp01(T / runEnd)));
-        const pose = T < runEnd ? (Math.floor(T / 0.16) % 2 ? P.run1 : P.run2)
+        const pose = T < runEnd ? runPose(T)
           : keys([[runEnd, P.stand], [1.5, P.wave1], [1.75, P.wave2], [2, P.wave1], [2.25, P.wave2], [2.5, P.wave1], [2.9, P.stand], [4, P.stand]], T);
+        if (T < runEnd) dust(ctx, x, g, T);
         figure(ctx, pose, x, g, { t });
         if (T > 1.6 && T < 3.2) text(ctx, 'Привет!', x + 52, g - 88, 13, '#f5f3fa', { alpha: clamp01((T - 1.6) * 4) * clamp01((3.2 - T) * 4) });
       } },
@@ -524,11 +553,12 @@
       } },
 
     // ─── Загрузка ───
-    { id: 'runLoop', group: 'load', title: 'Бег на месте', where: 'Любая загрузка дольше полсекунды', trigger: 'пока ждём', dur: 0.64,
+    { id: 'runLoop', group: 'load', title: 'Бег на месте', where: 'Любая загрузка дольше полсекунды', trigger: 'пока ждём', dur: 0.56,
       draw(ctx, W, H, t) {
         const g = H * 0.82; ground(ctx, W, g);
         for (let i = 0; i < 5; i++) { const x = W - ((t * 220 + i * 70) % (W + 40)); ctx.strokeStyle = '#3a2f52'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x, g - 20 - i * 12); ctx.lineTo(x + 26, g - 20 - i * 12); ctx.stroke(); }
-        figure(ctx, keys([[0, P.run1], [0.32, P.run2], [0.64, P.run1]], t % 0.64), W / 2, g, { t });
+        dust(ctx, W / 2, g, t);
+        figure(ctx, runPose(t), W / 2, g, { t });
       } },
     { id: 'juggle', group: 'load', title: 'Жонглирует цифрами', where: 'Загрузка профиля и истории', trigger: 'пока ждём', dur: 1.2,
       draw(ctx, W, H, t) {
@@ -539,12 +569,20 @@
           text(ctx, d, x + 8, y, 18, ['#c8f53c', '#ff5c7a', '#4fd8ff'][i]);
         });
       } },
-    { id: 'pushBar', group: 'load', title: 'Толкает полоску загрузки', where: 'Долгая загрузка с прогрессом', trigger: 'пока ждём', dur: 3,
+    { id: 'pushBar', group: 'load', title: 'Толкает полоску загрузки', where: 'Долгая загрузка с прогрессом', trigger: 'пока ждём', dur: 3.4,
       draw(ctx, W, H, t) {
-        const g = H * 0.84, T = t % 3, p = clamp01(T / 2.6); ground(ctx, W, g);
-        const bx = 40, bw = W - 80, end = bx + bw * p;
-        bar(ctx, bx, g - 26, bw, 22, p, `${Math.round(p * 100)}%`);
-        figure(ctx, keys([[0, P.push], [0.25, P.push2], [0.5, P.push]], T % 0.5), Math.max(bx - 6, end - 30), g, { t, s: 1.05 });
+        const g = H * 0.86, T = t % 3.4, p = clamp01(T / 3); ground(ctx, W, g);
+        // Полоска — брусок на уровне рук; стикмен за ней и толкает её вперёд.
+        const pose = keys([[0, P.push], [0.25, P.push2], [0.5, P.push]], T % 0.5), s = 1.3;
+        const k = skeleton(pose, 0, g, s, 1), reach = Math.max(k.ra[1][0], k.la[1][0]);
+        const barH = 24, barY = Math.min(k.ra[1][1], k.la[1][1]) - barH / 2, barW = 120;
+        const lead = lerp(W * 0.3, W - 16, p);
+        const bx = lead - barW;
+        figure(ctx, pose, bx - reach, g, { t, s });
+        ctx.fillStyle = '#2a2338'; roundRect(ctx, bx, barY, barW, barH, 8); ctx.fill();
+        ctx.fillStyle = '#c8f53c'; roundRect(ctx, bx, barY, Math.max(16, barW * p), barH, 8); ctx.fill();
+        text(ctx, `${Math.round(p * 100)}%`, bx + barW / 2, barY + barH / 2 + 0.5, 10, p > 0.5 ? '#0d0b14' : '#f5f3fa', { weight: 700 });
+        for (let i = 0; i < 3; i++) { const lx = bx - reach - 30 - i * 16 - (T * 60) % 16; ctx.strokeStyle = '#3a2f52'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(lx, g - 30 - i * 14); ctx.lineTo(lx - 14, g - 30 - i * 14); ctx.stroke(); }
       } },
     { id: 'hangBar', group: 'load', title: 'Подтягивается на полоске', where: 'Загрузка перед матчем', trigger: 'пока ждём', dur: 1.6,
       draw(ctx, W, H, t) {
@@ -557,28 +595,26 @@
       } },
 
     // ─── Поиск ───
-    { id: 'warmup', group: 'search', title: 'Бой с тенью', where: 'Экран «Ищем соперника»', trigger: 'пока ищем', dur: 1.6,
+    { id: 'warmup', group: 'search', title: 'Бой с тенью', where: 'Экран «Ищем соперника»', trigger: 'пока ищем', dur: 2.4,
       draw(ctx, W, H, t) {
-        const g = H * 0.84; ground(ctx, W, g); const T = t % 1.6;
-        figure(ctx, keys([[0, P.guard], [0.2, P.punch], [0.4, P.guard], [0.55, P.punch], [0.75, P.guard], [1.2, P.guard2], [1.6, P.guard]], T), W / 2 - 20, g, { t, gloves: true });
-        figure(ctx, keys([[0, P.guard], [0.2, P.punch], [0.4, P.guard], [0.55, P.punch], [0.75, P.guard], [1.2, P.guard2], [1.6, P.guard]], (T + 0.1) % 1.6), W / 2 + 60, g, { t, f: -1, gloves: true, alpha: 0.18 });
-      } },
-    { id: 'binoculars', group: 'search', title: 'Высматривает в бинокль', where: 'Экран «Ищем соперника»', trigger: 'пока ищем', dur: 3,
-      draw(ctx, W, H, t) {
-        const g = H * 0.84; ground(ctx, W, g); const T = t % 3, f = T < 1.5 ? 1 : -1;
-        const k = figure(ctx, with_(P.bino, { head: -6 + osc(t, 1.5, 6) }), W / 2, g, { t, f });
-        ctx.fillStyle = '#6f6689'; ctx.fillRect(k.head[0] + f * 7 - 5, k.head[1] - 5, 10, 8);
-        if (T % 1.5 > 0.9) text(ctx, '?', k.head[0] + f * 30, k.head[1] - 22, 20, '#c8f53c');
+        const g = H * 0.84; ground(ctx, W, g); const T = t % 2.4;
+        // Серия: джеб, джеб, прямой — затем уклон назад и нырок, как от ответного удара тени.
+        const combo = (x) => keys([[0, P.guard], [0.15, P.punch], [0.3, P.guard], [0.45, P.punch], [0.6, P.guard], [0.78, P.cross], [1, P.guard], [1.25, P.dodge], [1.5, P.guard], [1.75, P.duck], [2, P.guard], [2.4, P.guard]], x);
+        const shadow = (x) => keys([[0, P.guard], [1.1, P.guard], [1.25, P.punch], [1.45, P.guard], [1.7, P.kick], [1.95, P.guard], [2.4, P.guard]], x);
+        figure(ctx, combo(T), W / 2 - 24, g, { t, gloves: true });
+        figure(ctx, shadow(T), W / 2 + 56, g, { t, f: -1, gloves: true, alpha: 0.2 });
       } },
 
     // ─── Старт ───
     { id: 'faceoff', group: 'start', title: 'Выход на ринг и VS', where: 'Соперник найден', trigger: 'один раз, 2 с', dur: 3,
       draw(ctx, W, H, t) {
         const g = H * 0.84, T = t % 3; ground(ctx, W, g);
-        const walk = ease(clamp01(T / 1)), step = Math.floor(T / 0.16) % 2 ? P.run1 : P.run2;
-        const pose = T < 1 ? step : keys([[1, P.stand], [1.3, P.guard]], T);
-        figure(ctx, pose, lerp(-20, W * 0.3, walk), g, { t, gloves: T > 1 });
-        figure(ctx, pose, lerp(W + 20, W * 0.7, walk), g, { t, f: -1, look: OPPONENT, gloves: T > 1 });
+        const walk = ease(clamp01(T / 1));
+        const pose = T < 1 ? runPose(T) : keys([[1, P.stand], [1.3, P.guard]], T);
+        const x1 = lerp(-20, W * 0.3, walk), x2 = lerp(W + 20, W * 0.7, walk);
+        if (T < 1) { dust(ctx, x1, g, T); ctx.save(); ctx.translate(x2 * 2, 0); ctx.scale(-1, 1); dust(ctx, x2, g, T); ctx.restore(); }
+        figure(ctx, pose, x1, g, { t, gloves: T > 1 });
+        figure(ctx, pose, x2, g, { t, f: -1, look: OPPONENT, gloves: T > 1 });
         if (T > 1.1) {
           const k = clamp01((T - 1.1) / 0.25), sh = T < 1.5 ? osc(t, 0.05, 3) : 0;
           text(ctx, 'VS', W / 2 + sh, H * 0.38, lerp(70, 34, k), '#c8f53c', { stroke: 6, alpha: k });
@@ -641,15 +677,43 @@
         text(ctx, '0:24', W / 2, H * 0.2, 16, '#ff5c7a', { alpha: 0.5 + osc(t, 0.6, 0.5) });
       } },
 
-    // ─── Пауза ───
-    { id: 'rest', group: 'break', title: 'Передышка на табуретках', where: 'Пауза 10 секунд', trigger: 'фон', dur: 2,
+    { id: 'salto', group: 'battle', title: 'Сальто за быстрый ответ', where: 'Верный ответ быстрее 10 секунд', trigger: 'на событие, 1 с', dur: 2, wide: true,
       draw(ctx, W, H, t) {
-        const g = H * 0.86; ground(ctx, W, g);
-        stool(ctx, W * 0.28, g); stool(ctx, W * 0.72, g);
-        const breathe = (x) => with_(P.sit, { lean: 6 + osc(x, 2, 3), head: 4 + osc(x, 2, 4) });
-        figure(ctx, breathe(t), W * 0.28, g, { t, gloves: true });
-        const k = figure(ctx, breathe(t + 1), W * 0.72, g, { t, f: -1, look: OPPONENT, gloves: true });
-        ctx.save(); ctx.fillStyle = 'rgba(245,243,250,0.8)'; ctx.translate(k.ra[1][0], k.ra[1][1]); ctx.rotate(osc(t, 0.5, 0.6)); ctx.fillRect(-2, -18, 14, 18); ctx.restore();
+        const g = H * 0.86, T = t % 2; ground(ctx, W, g);
+        figure(ctx, P.guard, W * 0.68, g, { t, f: -1, look: OPPONENT, gloves: true, s: 1.3, mood: T > 0.3 && T < 1.3 ? 'wow' : undefined });
+        const x = W * 0.36, air = clamp01((T - 0.3) / 0.7), h = Math.sin(air * Math.PI) * 58;
+        if (T < 0.3 || T > 1) {
+          figure(ctx, T < 0.3 ? keys([[0, P.guard], [0.3, P.crouch]], T) : keys([[1, P.crouch], [1.3, P.armsUp], [2, P.armsUp]], T), x, g, { t, gloves: true, s: 1.3 });
+        } else {
+          // Кувырок назад вокруг центра тела.
+          const cy = g - 44 - h;
+          ctx.save(); ctx.translate(x, cy); ctx.rotate(-air * Math.PI * 2); ctx.translate(-x, -cy);
+          figure(ctx, P.tuck, x, cy + 40, { t, gloves: true, s: 1.3 });
+          ctx.restore();
+        }
+        if (T > 0.9 && T < 1.9) text(ctx, '⚡ 7 с!', x, g - 130 + (T - 0.9) * -10, 14, '#c8f53c', { alpha: 1 - (T - 0.9) });
+      } },
+
+    // ─── Пауза ───
+    { id: 'rest', group: 'break', title: 'Передышка в углах ринга', where: 'Пауза 10 секунд', trigger: 'фон', dur: 2.4,
+      draw(ctx, W, H, t) {
+        const g = H * 0.88; ground(ctx, W, g);
+        // Два угла ринга: стойки и три каната, на которые откинулись бойцы.
+        const corner = (x, dir) => {
+          ctx.strokeStyle = '#6f6689'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(x, g); ctx.lineTo(x, g - 104); ctx.stroke();
+          ctx.lineWidth = 2.5;
+          [0, 1, 2].forEach((i) => { ctx.strokeStyle = ['#ff5c7a', '#f5f3fa', '#8b6bff'][i]; ctx.beginPath(); ctx.moveTo(x, g - 100 + i * 24); ctx.lineTo(x + dir * 120, g - 96 + i * 24 + 4); ctx.stroke(); });
+        };
+        corner(18, 1); corner(W - 18, -1);
+        stool(ctx, W * 0.2, g); stool(ctx, W * 0.8, g);
+        const breathe = (x) => with_(P.restArms, { lean: P.restArms.lean + osc(x, 1.2, 3), head: P.restArms.head + osc(x, 1.2, 4) });
+        const a = figure(ctx, breathe(t), W * 0.2, g, { t, gloves: true, mood: 'wow' });
+        const b = figure(ctx, breathe(t + 0.6), W * 0.8, g, { t, f: -1, look: OPPONENT, gloves: true, mood: 'wow' });
+        // Полотенце на голове соперника и капли пота у обоих.
+        ctx.save(); ctx.fillStyle = 'rgba(245,243,250,0.85)'; const [hx, hy] = b.head, r = BONES.head * 1.5;
+        ctx.beginPath(); ctx.moveTo(hx - r * 1.2, hy + r * 1.2); ctx.quadraticCurveTo(hx - r * 1.3, hy - r * 1.5, hx, hy - r * 1.25); ctx.quadraticCurveTo(hx + r * 1.3, hy - r * 1.5, hx + r * 1.2, hy + r * 1.2); ctx.lineTo(hx + r * 0.8, hy - r * 0.2); ctx.lineTo(hx - r * 0.8, hy - r * 0.2); ctx.closePath(); ctx.fill(); ctx.restore();
+        [a, b].forEach((k, i) => { sweat(ctx, k.head[0] + 13, k.head[1] - 4, t, i * 0.4); sweat(ctx, k.head[0] - 13, k.head[1] - 8, t, 0.5 + i * 0.3); });
+        text(ctx, 'Раунд 2 через 7 с', W / 2, H * 0.14, 11, '#9b93b2', { weight: 500 });
       } },
 
     // ─── Итог ───
@@ -665,24 +729,44 @@
         const g = H * 0.86, T = t % 4; ground(ctx, W, g);
         const pose = keys([[0, P.sad], [1.6, P.sad], [2.2, P.crouch], [2.6, P.stand], [3, P.thumbs], [4, P.thumbs]], T);
         figure(ctx, pose, W / 2, g, { t, mood: T < 2 ? 'sad' : 'smile' });
-        if (T > 2.8) text(ctx, 'Ещё раз!', W / 2 + 64, g - 92, 13, '#c8f53c', { alpha: clamp01((T - 2.8) * 4) });
-      } },
-    { id: 'draw', group: 'result', title: 'Ничья — рукопожатие', where: 'Экран ничьей', trigger: 'один раз', dur: 2,
-      draw(ctx, W, H, t) {
-        const g = H * 0.86, T = t % 2; ground(ctx, W, g);
-        const shake = with_(P.shake, { ra: [62 + osc(t, 0.4, 10), 22] });
-        figure(ctx, shake, W * 0.4, g, { t });
-        figure(ctx, shake, W * 0.6, g, { t, f: -1, look: OPPONENT });
-        if (T > 1) text(ctx, '1 : 1', W / 2, H * 0.22, 18, '#c4bbdd');
       } },
 
     // ─── Мета ───
-    { id: 'profileIdle', group: 'meta', title: 'Живёт в профиле', where: 'Карточка профиля', trigger: 'фон', dur: 6,
+    { id: 'fireTrail', group: 'meta', title: 'Огненный след за серию', where: 'Три победы подряд: профиль и выход на ринг', trigger: 'пока идёт серия', dur: 0.56,
       draw(ctx, W, H, t) {
-        const g = H * 0.86, T = t % 6; ground(ctx, W, g);
-        const pose = keys([[0, P.stand], [3.5, with_(P.stand, { head: -4 })], [4, P.wave1], [4.3, P.wave2], [4.6, P.wave1], [5, P.stand], [6, P.stand]], T);
-        figure(ctx, with_(pose, { lean: pose.lean + osc(t, 3, 1.5) }), W / 2, g, { t });
+        const g = H * 0.86; ground(ctx, W, g);
+        const x = W * 0.55;
+        // Языки пламени тянутся за бегущим: частицы от оранжевого к жёлтому, гаснут и поднимаются.
+        for (let i = 0; i < 26; i++) {
+          const life = ((t * 1.6 + rnd(i)) % 1), px = x - 18 - life * 120 - rnd(i + 5) * 10, py = g - 20 - rnd(i + 7) * 55 - life * 18;
+          ctx.fillStyle = life < 0.4 ? '#ffd23f' : life < 0.7 ? '#ffb23f' : '#ff5c7a';
+          ctx.globalAlpha = (1 - life) * 0.85; ctx.beginPath(); ctx.arc(px, py, 7 * (1 - life) + 2, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        dust(ctx, x, g, t);
+        figure(ctx, runPose(t, 0.48), x, g, { t });
+        text(ctx, '🔥 3 победы подряд', W * 0.3, H * 0.1, 12, '#ffb23f', { weight: 700 });
       } },
+    { id: 'coach', group: 'meta', title: 'Стикмен-тренер', where: 'Слабая тема: совет, что потренировать', trigger: 'после матча, по поводу', dur: 3.6,
+      draw(ctx, W, H, t) {
+        const g = H * 0.86, T = t % 3.6; ground(ctx, W, g);
+        // Доска с темой, тренер со свистком и кепкой, игрок кивает.
+        ctx.fillStyle = '#1d1828'; roundRect(ctx, W * 0.36, g - 112, 108, 64, 8); ctx.fill();
+        ctx.strokeStyle = '#3a2f52'; ctx.lineWidth = 2; roundRect(ctx, W * 0.36, g - 112, 108, 64, 8); ctx.stroke();
+        text(ctx, 'Проценты', W * 0.36 + 54, g - 96, 11, '#f5f3fa', { weight: 700 });
+        text(ctx, '42% верно', W * 0.36 + 54, g - 78, 10, '#ff5c7a', { weight: 500 });
+        bar(ctx, W * 0.36 + 12, g - 66, 84, 8, 0.42);
+        const coachLook = { color: '#f5f3fa', hat: 'cap', item: 'none', face: 'smile' };
+        const k = figure(ctx, keys([[0, P.stand], [0.4, P.point], [1.6, P.point], [2, P.whistle], [2.6, P.whistle], [3, P.stand], [3.6, P.stand]], T), W * 0.2, g, { t, look: coachLook });
+        if (T > 2 && T < 2.6) {
+          ctx.fillStyle = '#ffd23f'; ctx.fillRect(k.head[0] + 9, k.head[1] + 2, 9, 5);
+          ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2;
+          for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(k.head[0] + 20, k.head[1] + 4, 6 + i * 6 + ((T - 2) * 20) % 6, -0.6, 0.6); ctx.stroke(); }
+        }
+        figure(ctx, keys([[0, P.stand], [0.6, P.nod], [0.9, P.stand], [1.2, P.nod], [1.5, P.stand], [3.6, P.stand]], T), W * 0.84, g, { t, f: -1 });
+        if (T > 0.5 && T < 1.9) text(ctx, 'Потренируем?', W * 0.2 + 40, g - 128, 11, '#c8f53c', { weight: 700 });
+      } },
+
     { id: 'shopTry', group: 'meta', title: 'Кружится в обновке', where: 'Примерка в магазине', trigger: 'на выбор предмета', dur: 2,
       draw(ctx, W, H, t) {
         const g = H * 0.86, T = t % 2; ground(ctx, W, g);
@@ -702,25 +786,6 @@
         figure(ctx, pose, W * 0.38, g, { t, mood: T > 1.4 ? 'wow' : undefined });
         if (T > 1.5) { const k = clamp01((T - 1.5) / 0.5); text(ctx, '💎', bx, by - 36 - k * 34, 24, '#fff', { alpha: k }); for (let i = 0; i < 4; i++) sparkle(ctx, bx + Math.cos(i * 1.6) * 26, by - 60 + Math.sin(i * 1.6) * 20, 4, k); }
       } },
-    { id: 'upgrade', group: 'meta', title: 'Upgrade: успех или дым', where: 'Экран Upgrade', trigger: 'на результат', dur: 5,
-      draw(ctx, W, H, t) {
-        const g = H * 0.86, T = t % 5, win = Math.floor(t / 5) % 2 === 0, local = T % 2.5; ground(ctx, W, g);
-        const k = figure(ctx, local < 1.4 ? P.hold : win ? P.armsUp : P.shrug, W / 2, g, { t, mood: local > 1.4 ? (win ? 'wow' : 'sad') : undefined });
-        const ix = local < 1.4 ? (k.ra[1][0] + k.la[1][0]) / 2 : W / 2, iy = local < 1.4 ? k.ra[1][1] - 10 : k.head[1] - 44;
-        if (local < 1.4) { const sh = osc(t, 0.06, local * 2); ctx.save(); ctx.shadowColor = '#8b6bff'; ctx.shadowBlur = 8 + local * 14; text(ctx, '🔷', ix + sh, iy, 20, '#fff'); ctx.restore(); }
-        else if (win) { burst(ctx, ix, iy, 30, '#c8f53c', clamp01(2.4 - local)); text(ctx, '🟣', ix, iy, 22, '#fff'); }
-        else for (let i = 0; i < 6; i++) { ctx.fillStyle = `rgba(155,147,178,${clamp01(2.3 - local) * 0.6})`; ctx.beginPath(); ctx.arc(ix + Math.cos(i) * 16 * local, iy - local * 10 + Math.sin(i) * 10, 9, 0, Math.PI * 2); ctx.fill(); }
-        text(ctx, win ? 'шанс 25% — успех' : 'шанс 25% — сгорел', W / 2, H * 0.12, 10, '#9b93b2', { weight: 500 });
-      } },
-    { id: 'achievement', group: 'meta', title: 'Поднимает медаль', where: 'Новое достижение', trigger: 'на событие', dur: 2.4,
-      draw(ctx, W, H, t) {
-        const g = H * 0.86, T = t % 2.4; ground(ctx, W, g);
-        const k = figure(ctx, keys([[0, P.stand], [0.4, P.medal], [2.4, P.medal]], T), W / 2, g, { t, mood: 'wow' });
-        const [hx, hy] = k.ra[1];
-        if (T > 0.4) { ctx.save(); ctx.translate(hx, hy - 10); ctx.rotate(t * 0.8); for (let i = 0; i < 10; i++) { ctx.rotate(Math.PI / 5); ctx.fillStyle = 'rgba(255,210,63,0.16)'; ctx.fillRect(0, -2, 44, 4); } ctx.restore(); }
-        ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(hx, hy - 10, 9, 0, Math.PI * 2); ctx.fill();
-        text(ctx, '5', hx, hy - 10, 9, '#0d0b14');
-      } },
     { id: 'ratingUp', group: 'meta', title: 'Взбирается по рейтингу', where: 'Рейтинг вырос после матча', trigger: 'на событие', dur: 3,
       draw(ctx, W, H, t) {
         const T = t % 3, stepW = 44, stepH = 16, base = H * 0.9, x0 = W * 0.18;
@@ -732,32 +797,13 @@
       } },
 
     // ─── Системные ───
-    { id: 'offline', group: 'system', title: 'Нет сети: провод выдернут', where: 'Потеря связи, в том числе во время матча', trigger: 'пока нет сети', dur: 3,
-      draw(ctx, W, H, t) {
-        const g = H * 0.86, T = t % 3; ground(ctx, W, g);
-        const k = figure(ctx, T < 1.5 ? P.hold : P.scratch, W * 0.42, g, { t, mood: 'wow' });
-        const px = T < 1.5 ? (k.ra[1][0] + k.la[1][0]) / 2 : W * 0.56, py = T < 1.5 ? k.ra[1][1] : g - 8;
-        ctx.strokeStyle = '#6f6689'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(W - 20, g - 4); ctx.bezierCurveTo(W * 0.8, g - 4, W * 0.7, g - 40, px, py); ctx.stroke();
-        ctx.fillStyle = '#9b93b2'; ctx.fillRect(px - 4, py - 5, 9, 10);
-        if (T > 1.5) text(ctx, '?!', k.head[0] + 22, k.head[1] - 24, 16, '#ff5c7a');
-      } },
-    { id: 'empty', group: 'system', title: 'Пожимает плечами у пустоты', where: 'Пустая история, нет подарков', trigger: 'фон', dur: 2.4,
-      draw(ctx, W, H, t) {
-        const g = H * 0.86, T = t % 2.4; ground(ctx, W, g);
-        figure(ctx, keys([[0, P.stand], [0.5, P.shrug], [1.6, P.shrug], [2.1, P.stand], [2.4, P.stand]], T), W * 0.38, g, { t });
-        ctx.strokeStyle = '#3a2f52'; ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeRect(W * 0.6, g - 44, 56, 44); ctx.setLineDash([]);
-        text(ctx, 'пусто', W * 0.6 + 28, g - 22, 10, '#6f6689', { weight: 500 });
-      } },
   ];
 
   const IDEAS = [
     { id: 'idea-bot', title: 'Стикер от бота', text: 'Когда соперник найден или пришёл подарок, бот MAX присылает короткий GIF со стикменом игрока.' },
-    { id: 'idea-speed', title: 'Сальто за быстрый ответ', text: 'Решил задачу быстрее 10 секунд — стикмен делает сальто. Поощряет скорость, но не влияет на рейтинг.' },
-    { id: 'idea-streak', title: 'Огненный след за серию', text: 'Три победы подряд — за стикменом тянется огненный след в профиле и в следующем матче.' },
     { id: 'idea-react', title: 'Реакции без текста', text: 'Три готовые реакции во время паузы (👏 😮 😅): стикмен показывает их сопернику. Общение без свободного текста — безопасно для детей.' },
     { id: 'idea-school', title: 'Толпа школы', text: 'В рейтинге школ каждая школа — толпа стикменов её учеников с флагом; чем активнее школа, тем больше толпа.' },
     { id: 'idea-week', title: 'Мультик недели', text: 'Раз в неделю — 10-секундный ролик из лучших моментов игрока: победы, достижения, рост рейтинга.' },
-    { id: 'idea-coach', title: 'Стикмен-тренер', text: 'На слабых темах появляется тренер со свистком и подсказывает, что порешать в тренировке.' },
   ];
 
   // ═══ Голоса ════════════════════════════════════════════════════════════════
