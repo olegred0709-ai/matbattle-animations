@@ -122,6 +122,38 @@
   .board li span { color: var(--muted); font-variant-numeric: tabular-nums; }
   .empty { color: var(--dim); font-size: 14px; margin-top: 8px; }
 
+  .fixed { font-size: 12px; color: var(--accent); }
+  .open-wardrobe { margin-top: 4px; font: 700 14px var(--display); letter-spacing: 0.02em; padding: 12px 16px; border-radius: 14px; border: 0; background: var(--accent); color: var(--accent-ink); }
+
+  /* ─── Гардероб ─── */
+  dialog.wardrobe { width: min(1040px, calc(100% - 24px)); max-height: calc(100% - 24px); padding: 0; border: 1px solid var(--line-strong); border-radius: 28px; background: var(--card); color: var(--text); overflow: hidden; }
+  dialog.wardrobe::backdrop { background: rgba(8, 6, 14, 0.78); backdrop-filter: blur(6px); }
+  .wr { display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); max-height: calc(100vh - 26px); }
+  @media (max-width: 760px) { .wr { grid-template-columns: 1fr; overflow: auto; } }
+  .wr-left { background: var(--bg); padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .wr-left canvas { width: 100%; aspect-ratio: 3 / 4; display: block; border-radius: 18px; background: radial-gradient(circle at 50% 40%, #1d1828, #0d0b14 70%); }
+  @media (max-width: 760px) { .wr-left canvas { max-width: 260px; margin: 0 auto; } }
+  .wr-title { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .wr-close { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line-strong); background: var(--card); color: var(--soft); font-size: 18px; }
+  .outfit { display: flex; flex-wrap: wrap; gap: 6px; }
+  .outfit span { font-size: 12px; padding: 4px 9px; border-radius: 999px; background: var(--card-2); color: var(--soft); }
+  .total { font-size: 14px; color: var(--muted); }
+  .total b { font: 700 18px var(--display); color: var(--accent); }
+  .wr-right { padding: 18px; display: flex; flex-direction: column; gap: 14px; overflow: auto; min-height: 0; }
+  .wr-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .wr-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+  .wr-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px; border-radius: 16px; background: var(--bg); border: 1px solid var(--line); text-align: left; }
+  .wr-item[aria-pressed="true"] { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .wr-item .ico { font-size: 26px; line-height: 1.1; }
+  .wr-item .nm { font-size: 13px; font-weight: 600; }
+  .wr-item .meta2 { display: flex; gap: 6px; align-items: center; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .rar { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .wr-colors { display: flex; flex-direction: column; gap: 14px; }
+  .wr .label { font-size: 12px; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+  .wr-foot { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; }
+  .wr-foot .opt { padding: 9px 14px; }
+  .wr-foot .done { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -135,7 +167,7 @@
         <span>МАТБАТЛ · АНИМАЦИИ</span>
       </div>
       <h1>Стикмены <span class="accent">Матбатла</span></h1>
-      <p class="lead">Версия 3 — второй круг правок: приветствие на 12 языках, крупные цифры, подтягивания с настоящими локтями, сплошные канаты, рейтинг в кадре, новый тренер. Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
+      <p class="lead">Версия 4 — появился гардероб: 60+ вещей, эффекты и стили линий. На карточках отмечено, какие правки уже учтены. Каждый игрок — свой стикмен, которого можно одеть в магазине. Здесь все анимации, которые предлагаем для входа, загрузки, батла и остальных экранов. Соберите своего персонажа справа — он сыграет во всех сценах.</p>
       <div class="howto">
         <span>👍 / 👎 — голос виден всей команде</span>
         <span>Комментарий — что поменять</span>
@@ -149,9 +181,31 @@
         <div><div class="label">Голова</div><div class="options" id="c-hat"></div></div>
         <div><div class="label">Аксессуар</div><div class="options" id="c-item"></div></div>
         <div><div class="label">Лицо</div><div class="options" id="c-face"></div></div>
+        <button class="open-wardrobe" type="button" id="open-wardrobe">Открыть гардероб — 60+ вещей</button>
       </div>
     </section>
   </header>
+
+  <dialog class="wardrobe" id="wardrobe" aria-labelledby="wr-heading">
+    <div class="wr">
+      <div class="wr-left">
+        <div class="wr-title"><h2 id="wr-heading">Гардероб</h2><button class="wr-close" type="button" id="wr-close" aria-label="Закрыть">×</button></div>
+        <canvas id="wr-canvas" aria-label="Превью образа"></canvas>
+        <div class="options" id="wr-poses"></div>
+        <div class="outfit" id="wr-outfit"></div>
+        <p class="total">Стоимость образа: <b id="wr-total">0</b> ⚡</p>
+      </div>
+      <div class="wr-right">
+        <div class="wr-tabs" id="wr-tabs"></div>
+        <div id="wr-panel"></div>
+        <div class="wr-foot">
+          <button class="opt" type="button" id="wr-random">🎲 Случайный образ</button>
+          <button class="opt" type="button" id="wr-reset">Сбросить</button>
+          <button class="opt done" type="button" id="wr-done">Готово</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
 
   <div class="toolbar">
     <div class="filters" id="filters"></div>
@@ -188,13 +242,43 @@
   const HATS = [['none', 'без'], ['cap', 'кепка'], ['crown', 'корона'], ['band', 'повязка'], ['grad', 'выпускник']];
   const ITEMS = [['none', 'без'], ['cape', 'плащ'], ['scarf', 'шарф']];
   const FACES = [['smile', 'улыбка'], ['fierce', 'боевое'], ['glasses', 'очки']];
-  const OPPONENT = { color: '#ff5c7a', hat: 'band', item: 'none', face: 'fierce' };
+  const OPPONENT = { color: '#ff5c7a', accent: '#8b6bff', hat: 'band', item: 'none', face: 'fierce', hand: 'none', effect: 'none', line: 'solid' };
+  const DEFAULT_LOOK = { color: '#c8f53c', accent: '#ff5c7a', hat: 'cap', item: 'cape', face: 'smile', hand: 'none', effect: 'none', line: 'solid' };
+
+  // Каталог гардероба: [значение, название, значок, редкость, цена в ⚡]. Цены — черновик для магазина.
+  const RARITY = { common: ['обычная', '#9b93b2'], uncommon: ['необычная', '#4ade80'], rare: ['редкая', '#4fd8ff'], epic: ['эпическая', '#8b6bff'], legendary: ['легендарная', '#ffd23f'] };
+  const WARDROBE = [
+    { key: 'hat', title: 'Голова', items: [
+      ['none', 'Без убора', '·', 'common', 0], ['cap', 'Кепка', '🧢', 'common', 100], ['band', 'Повязка', '🎗️', 'common', 120],
+      ['grad', 'Шапка выпускника', '🎓', 'uncommon', 250], ['headphones', 'Наушники', '🎧', 'uncommon', 280], ['cowboy', 'Ковбойская шляпа', '🤠', 'rare', 400],
+      ['viking', 'Шлем викинга', '⛑️', 'rare', 450], ['propeller', 'Кепка с пропеллером', '🌀', 'rare', 420], ['wizard', 'Колпак волшебника', '🧙', 'epic', 700],
+      ['mohawk', 'Ирокез', '⚡', 'epic', 650], ['crown', 'Корона', '👑', 'legendary', 1200], ['halo', 'Нимб', '😇', 'legendary', 1100] ] },
+    { key: 'face', title: 'Лицо', items: [
+      ['smile', 'Улыбка', '🙂', 'common', 0], ['fierce', 'Боевое', '😠', 'common', 0], ['glasses', 'Очки', '👓', 'common', 90],
+      ['mustache', 'Усы', '🥸', 'uncommon', 180], ['sunglasses', 'Тёмные очки', '🕶️', 'uncommon', 220], ['monocle', 'Монокль', '🧐', 'rare', 360],
+      ['mask', 'Маска героя', '🦸', 'rare', 380], ['stars', 'Звёзды в глазах', '🤩', 'epic', 600] ] },
+    { key: 'item', title: 'Тело', items: [
+      ['none', 'Ничего', '·', 'common', 0], ['scarf', 'Шарф', '🧣', 'common', 150], ['bowtie', 'Бабочка', '🎀', 'common', 120],
+      ['backpack', 'Рюкзак', '🎒', 'uncommon', 240], ['jersey', 'Майка с номером', '🎽', 'uncommon', 260], ['cape', 'Плащ', '🦹', 'uncommon', 300],
+      ['medal', 'Медаль', '🥇', 'rare', 500], ['belt', 'Пояс чемпиона', '🏆', 'epic', 900], ['wings', 'Крылья', '🪽', 'legendary', 1500] ] },
+    { key: 'hand', title: 'В руке', items: [
+      ['none', 'Пусто', '·', 'common', 0], ['pencil', 'Карандаш', '✏️', 'common', 80], ['ruler', 'Линейка', '📏', 'common', 90],
+      ['book', 'Учебник', '📘', 'uncommon', 160], ['ball', 'Мяч', '⚽', 'uncommon', 200], ['flag', 'Флаг школы', '🚩', 'rare', 350],
+      ['shield', 'Щит с π', '🛡️', 'epic', 800] ] },
+    { key: 'effect', title: 'Эффект', items: [
+      ['none', 'Без эффекта', '·', 'common', 0], ['sparks', 'Искры', '✨', 'uncommon', 300], ['snow', 'Снежинки', '❄️', 'rare', 450],
+      ['aura', 'Аура', '🔮', 'epic', 900], ['fire', 'Огонь', '🔥', 'epic', 950], ['rainbow', 'Радуга', '🌈', 'legendary', 1600] ] },
+    { key: 'line', title: 'Стиль линий', items: [
+      ['solid', 'Обычные', '✏️', 'common', 0], ['thick', 'Жирные', '🖊️', 'uncommon', 200], ['neon', 'Неон', '💡', 'epic', 850] ] },
+  ];
+  const PALETTE = ['#c8f53c', '#ff5c7a', '#8b6bff', '#4fd8ff', '#ffb23f', '#f5f3fa', '#4ade80', '#ffd23f', '#ff7a45', '#b98cff'];
+  const ACCENTS = ['#ff5c7a', '#8b6bff', '#4fd8ff', '#ffd23f', '#4ade80', '#ffb23f', '#f5f3fa', '#c8f53c'];
 
   const store = {
     get(key, fallback) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } },
     set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* приватное окно — не страшно */ } },
   };
-  const me = Object.assign({ color: '#c8f53c', hat: 'cap', item: 'cape', face: 'smile' }, store.get('stickman.me', {}));
+  const me = Object.assign({}, DEFAULT_LOOK, store.get('stickman.me', {}));
 
   // ═══ Скелет и позы ═════════════════════════════════════════════════════════
   // Углы в градусах: 0 — вниз, 90 — вперёд, 180 — вверх, отрицательные — назад.
@@ -337,13 +421,18 @@
     if (o.alpha != null) ctx.globalAlpha = o.alpha;
     ctx.lineCap = 'round'; ctx.lineJoin = 'round';
 
-    if (look.item === 'cape' && reveal >= 1) cape(ctx, k, look.color, t);
+    const full = reveal >= 1;
+    if (full) effectBehind(ctx, k, look, t);
+    if (full && look.item === 'cape') cape(ctx, k, look.color, t);
+    if (full) backItems(ctx, k, look, t);
+    const lw = look.line === 'thick' ? 1.45 : 1;
+    if (look.line === 'neon') { ctx.shadowColor = look.color; ctx.shadowBlur = 9 * s / 1.5; }
     const segs = [
-      () => poly(ctx, [k.hip, k.ll[0], k.ll[1]], look.color, 4.2 * s / 1.5, 0.55),
-      () => poly(ctx, [k.sh, k.la[0], k.la[1]], look.color, 4.2 * s / 1.5, 0.55),
-      () => poly(ctx, [k.hip, k.sh], look.color, 4.6 * s / 1.5),
-      () => poly(ctx, [k.hip, k.rl[0], k.rl[1]], look.color, 4.6 * s / 1.5),
-      () => poly(ctx, [k.sh, k.ra[0], k.ra[1]], look.color, 4.6 * s / 1.5),
+      () => poly(ctx, [k.hip, k.ll[0], k.ll[1]], look.color, 4.2 * lw * s / 1.5, 0.55),
+      () => poly(ctx, [k.sh, k.la[0], k.la[1]], look.color, 4.2 * lw * s / 1.5, 0.55),
+      () => poly(ctx, [k.hip, k.sh], look.color, 4.6 * lw * s / 1.5),
+      () => poly(ctx, [k.hip, k.rl[0], k.rl[1]], look.color, 4.6 * lw * s / 1.5),
+      () => poly(ctx, [k.sh, k.ra[0], k.ra[1]], look.color, 4.6 * lw * s / 1.5),
     ];
     if (o.noArms) { segs.splice(4, 1); segs.splice(1, 1); }
     const shown = Math.floor(reveal * (segs.length + 1));
@@ -355,8 +444,12 @@
       }
       ctx.globalAlpha = o.alpha ?? 1;
     }
-    if (shown >= 1 || reveal >= 1) head(ctx, k, look, o, t);
-    if (look.item === 'scarf' && reveal >= 1) scarf(ctx, k, t);
+    ctx.shadowBlur = 0;
+    if (full) frontItems(ctx, k, look, t);
+    if (full && !o.noArms && !o.gloves) handItem(ctx, k, look, t);
+    if (shown >= 1 || full) head(ctx, k, look, o, t);
+    if (full && look.item === 'scarf') scarf(ctx, k, t);
+    if (full) effectFront(ctx, k, look, t);
     ctx.restore();
     return k;
   }
@@ -382,7 +475,9 @@
         const cx = ex + dx * r, cy = ey;
         ctx.beginPath(); ctx.moveTo(cx - 2.2, cy - 2.2); ctx.lineTo(cx + 2.2, cy + 2.2); ctx.moveTo(cx + 2.2, cy - 2.2); ctx.lineTo(cx - 2.2, cy + 2.2); ctx.stroke();
       }
-    } else {
+    } else if (look.face === 'stars' && !o.mood) {
+      for (const dx of [-0.26, 0.3]) star(ctx, ex + dx * r, ey, r * 0.3, '#ffd23f', t * 2);
+    } else if (look.face !== 'sunglasses' || o.mood) {
       for (const dx of [-0.26, 0.3]) {
         if (blink) { ctx.beginPath(); ctx.moveTo(ex + dx * r - 2, ey); ctx.lineTo(ex + dx * r + 2, ey); ctx.stroke(); }
         else { ctx.beginPath(); ctx.arc(ex + dx * r, ey, 1.6 * k.s / 1.5, 0, Math.PI * 2); ctx.fill(); }
@@ -404,7 +499,170 @@
       ctx.lineWidth = 1.4 * k.s / 1.5;
       for (const dx of [-0.26, 0.3]) { ctx.beginPath(); ctx.arc(ex + dx * r, ey, r * 0.24, 0, Math.PI * 2); ctx.stroke(); }
     }
+    faceExtras(ctx, hx, hy, ex, ey, r, f, look, k.s);
     hat(ctx, hx, hy, r, f, look, t, k.s);
+  }
+
+  function faceExtras(ctx, hx, hy, ex, ey, r, f, look, s) {
+    ctx.save();
+    const acc = look.accent ?? '#ff5c7a';
+    if (look.face === 'sunglasses') {
+      ctx.fillStyle = '#0d0b14'; ctx.strokeStyle = look.color; ctx.lineWidth = 1.4 * s / 1.5;
+      for (const dx of [-0.26, 0.3]) { ctx.beginPath(); ctx.ellipse(ex + dx * r, ey, r * 0.27, r * 0.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.beginPath(); ctx.moveTo(ex - 0.02 * r, ey); ctx.lineTo(ex + 0.06 * r, ey); ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.7)'; ctx.lineWidth = 1;
+      for (const dx of [-0.26, 0.3]) { ctx.beginPath(); ctx.moveTo(ex + dx * r - 2, ey - 1.5); ctx.lineTo(ex + dx * r + 0.5, ey - 3); ctx.stroke(); }
+    } else if (look.face === 'mask') {
+      ctx.fillStyle = acc; ctx.beginPath();
+      ctx.moveTo(hx - r * 0.95, ey - r * 0.2); ctx.lineTo(hx + r * 0.95, ey - r * 0.2); ctx.lineTo(hx + r * 0.95, ey + r * 0.22); ctx.lineTo(hx - r * 0.95, ey + r * 0.22); ctx.closePath();
+      for (const dx of [-0.26, 0.3]) { ctx.moveTo(ex + dx * r + r * 0.15, ey); ctx.arc(ex + dx * r, ey, r * 0.15, 0, Math.PI * 2); }
+      ctx.fill('evenodd');
+      ctx.fillStyle = look.color; for (const dx of [-0.26, 0.3]) { ctx.beginPath(); ctx.arc(ex + dx * r, ey, 1.4 * s / 1.5, 0, Math.PI * 2); ctx.fill(); }
+    } else if (look.face === 'monocle') {
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 1.4 * s / 1.5;
+      const mx = ex + 0.3 * r; ctx.beginPath(); ctx.arc(mx, ey, r * 0.27, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(mx, ey + r * 0.27); ctx.quadraticCurveTo(mx + f * r * 0.2, ey + r * 0.9, hx - f * r * 0.2, hy + r * 1.3); ctx.stroke();
+    } else if (look.face === 'mustache') {
+      ctx.strokeStyle = look.color; ctx.lineWidth = 2.2 * s / 1.5; const my = hy + r * 0.2, mx = ex + 0.02 * r;
+      ctx.beginPath(); ctx.moveTo(mx, my); ctx.quadraticCurveTo(mx - r * 0.3, my + r * 0.25, mx - r * 0.5, my - r * 0.05);
+      ctx.moveTo(mx, my); ctx.quadraticCurveTo(mx + r * 0.3, my + r * 0.25, mx + r * 0.5, my - r * 0.05); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function star(ctx, x, y, r, color, rot = 0) {
+    ctx.save(); ctx.fillStyle = color; ctx.translate(x, y); ctx.rotate(rot); ctx.beginPath();
+    for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2 - Math.PI / 2, rr = i % 2 ? r * 0.45 : r; ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); }
+    ctx.closePath(); ctx.fill(); ctx.restore();
+  }
+
+  /** Точка на торсе: 0 — бедро, 1 — плечо. И угол торса, чтобы одежда поворачивалась с телом. */
+  const onTorso = (k, u) => [lerp(k.hip[0], k.sh[0], u), lerp(k.hip[1], k.sh[1], u)];
+  const torsoAngle = (k) => Math.atan2(k.sh[1] - k.hip[1], k.sh[0] - k.hip[0]) + Math.PI / 2;
+
+  /** То, что за спиной: рюкзак, крылья. */
+  function backItems(ctx, k, look, t) {
+    const s = k.s / 1.5, f = k.f, acc = look.accent ?? '#ff5c7a';
+    ctx.save();
+    if (look.item === 'backpack') {
+      const [x, y] = onTorso(k, 0.55); ctx.translate(x, y); ctx.rotate(torsoAngle(k));
+      ctx.fillStyle = acc; roundRect(ctx, f > 0 ? -18 * s : 7 * s, -12 * s, 11 * s, 22 * s, 4 * s); ctx.fill();
+      ctx.fillStyle = 'rgba(13,11,20,0.35)'; ctx.fillRect(f > 0 ? -16 * s : 9 * s, -2 * s, 7 * s, 5 * s);
+    } else if (look.item === 'wings') {
+      const [x, y] = onTorso(k, 0.85), flap = osc(t, 0.9, 0.35);
+      for (const [side, a] of [[1, 0.9], [-1, 0.5]]) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(-f * (0.5 + flap) * side * 0.6); ctx.globalAlpha *= a;
+        ctx.fillStyle = '#f5f3fa'; ctx.beginPath(); ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(-f * 30 * s, -26 * s, -f * 44 * s, -8 * s); ctx.quadraticCurveTo(-f * 30 * s, -4 * s, -f * 36 * s, 6 * s);
+        ctx.quadraticCurveTo(-f * 20 * s, 2 * s, -f * 24 * s, 14 * s); ctx.quadraticCurveTo(-f * 10 * s, 6 * s, 0, 0); ctx.fill(); ctx.restore();
+      }
+    }
+    ctx.restore();
+  }
+
+  /** То, что поверх тела: майка, пояс, медаль, бабочка. */
+  function frontItems(ctx, k, look, t) {
+    const s = k.s / 1.5, acc = look.accent ?? '#ff5c7a';
+    ctx.save();
+    if (look.item === 'jersey') {
+      const [x, y] = onTorso(k, 0.55); ctx.translate(x, y); ctx.rotate(torsoAngle(k));
+      ctx.fillStyle = acc; roundRect(ctx, -8 * s, -15 * s, 16 * s, 27 * s, 4 * s); ctx.fill();
+      ctx.fillStyle = '#0d0b14'; ctx.font = `900 ${11 * s}px Unbounded, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('7', 0, -1 * s);
+    } else if (look.item === 'belt') {
+      const [x, y] = onTorso(k, 0.08); ctx.translate(x, y); ctx.rotate(torsoAngle(k));
+      ctx.fillStyle = '#b8860b'; ctx.fillRect(-10 * s, -3 * s, 20 * s, 6 * s);
+      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.ellipse(0, 0, 7 * s, 5.5 * s, 0, 0, Math.PI * 2); ctx.fill();
+      star(ctx, 0, 0, 3.2 * s, '#b8860b');
+    } else if (look.item === 'medal') {
+      const [nx, ny] = onTorso(k, 1), [mx, my] = onTorso(k, 0.62);
+      ctx.strokeStyle = acc; ctx.lineWidth = 2.4 * s;
+      ctx.beginPath(); ctx.moveTo(nx - 5 * s, ny); ctx.lineTo(mx, my); ctx.lineTo(nx + 5 * s, ny); ctx.stroke();
+      ctx.fillStyle = '#ffd23f'; ctx.beginPath(); ctx.arc(mx, my + 3 * s, 5.5 * s + osc(t, 1.5, 0.3), 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0d0b14'; ctx.font = `900 ${6 * s}px Unbounded, sans-serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('1', mx, my + 3.4 * s);
+    } else if (look.item === 'bowtie') {
+      const [x, y] = onTorso(k, 0.96); ctx.fillStyle = acc;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 7 * s, y - 4 * s); ctx.lineTo(x - 7 * s, y + 4 * s); ctx.closePath();
+      ctx.moveTo(x, y); ctx.lineTo(x + 7 * s, y - 4 * s); ctx.lineTo(x + 7 * s, y + 4 * s); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, 2 * s, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /** Предмет в передней руке — повёрнут вдоль предплечья. */
+  function handItem(ctx, k, look, t) {
+    if (!look.hand || look.hand === 'none') return;
+    const s = k.s / 1.5, [hx, hy] = k.ra[1], [ex, ey] = k.ra[0], acc = look.accent ?? '#ff5c7a';
+    const ang = Math.atan2(hy - ey, hx - ex);
+    ctx.save(); ctx.translate(hx, hy);
+    if (look.hand === 'flag') {
+      ctx.strokeStyle = '#c4bbdd'; ctx.lineWidth = 2 * s; ctx.beginPath(); ctx.moveTo(0, 6 * s); ctx.lineTo(0, -34 * s); ctx.stroke();
+      ctx.fillStyle = acc; ctx.beginPath(); ctx.moveTo(0, -34 * s);
+      ctx.quadraticCurveTo(k.f * 10 * s, (-30 + osc(t, 0.5, 3)) * s, k.f * 20 * s, (-28 + osc(t, 0.4, 2)) * s); ctx.lineTo(0, -20 * s); ctx.closePath(); ctx.fill();
+    } else if (look.hand === 'shield') {
+      ctx.fillStyle = acc; ctx.beginPath(); ctx.arc(k.f * 3 * s, 0, 11 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2 * s; ctx.stroke();
+      ctx.fillStyle = '#0d0b14'; ctx.font = `900 ${12 * s}px 'Golos Text', serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('π', k.f * 3 * s, 1 * s);
+    } else if (look.hand === 'ball') {
+      ctx.fillStyle = '#f5f3fa'; ctx.beginPath(); ctx.arc(Math.cos(ang) * 6 * s, Math.sin(ang) * 6 * s, 6 * s, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#0d0b14'; ctx.beginPath(); ctx.arc(Math.cos(ang) * 6 * s, Math.sin(ang) * 6 * s, 2.2 * s, 0, Math.PI * 2); ctx.fill();
+    } else if (look.hand === 'book') {
+      ctx.rotate(ang - Math.PI / 2); ctx.fillStyle = '#4fd8ff'; ctx.fillRect(-7 * s, -2 * s, 14 * s, 17 * s);
+      ctx.fillStyle = '#f5f3fa'; ctx.fillRect(-5 * s, 2 * s, 10 * s, 1.5 * s); ctx.fillRect(-5 * s, 6 * s, 10 * s, 1.5 * s);
+    } else {
+      ctx.rotate(ang);
+      if (look.hand === 'pencil') {
+        ctx.fillStyle = '#ffd23f'; ctx.fillRect(-4 * s, -2 * s, 18 * s, 4 * s);
+        ctx.fillStyle = '#ff5c7a'; ctx.fillRect(-7 * s, -2 * s, 3 * s, 4 * s);
+        ctx.fillStyle = '#f5d2a0'; ctx.beginPath(); ctx.moveTo(14 * s, -2 * s); ctx.lineTo(20 * s, 0); ctx.lineTo(14 * s, 2 * s); ctx.closePath(); ctx.fill();
+      } else if (look.hand === 'ruler') {
+        ctx.fillStyle = '#ffb23f'; ctx.fillRect(-4 * s, -3 * s, 28 * s, 6 * s);
+        ctx.strokeStyle = '#0d0b14'; ctx.lineWidth = 1;
+        for (let i = 0; i < 7; i++) { ctx.beginPath(); ctx.moveTo((-1 + i * 4) * s, -3 * s); ctx.lineTo((-1 + i * 4) * s, (i % 2 ? -1 : 0) * s); ctx.stroke(); }
+      }
+    }
+    ctx.restore();
+  }
+
+  /** Эффекты вокруг фигуры: позади тела — аура, огонь, радуга; спереди — искры, снег. */
+  function effectBehind(ctx, k, look, t) {
+    const s = k.s / 1.5, [cx, cy] = onTorso(k, 0.5), acc = look.accent ?? '#ff5c7a';
+    ctx.save();
+    if (look.effect === 'aura') {
+      const r = (46 + osc(t, 1.6, 4)) * s, g = ctx.createRadialGradient(cx, cy, 4 * s, cx, cy, r);
+      g.addColorStop(0, acc + '66'); g.addColorStop(1, acc + '00'); ctx.fillStyle = g;
+      ctx.beginPath(); ctx.ellipse(cx, cy - 6 * s, r * 0.8, r * 1.2, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (look.effect === 'fire') {
+      const feet = [k.ll[1], k.rl[1]];
+      for (let i = 0; i < 18; i++) {
+        const life = (t * 1.4 + rnd(i)) % 1, base = feet[i % 2];
+        const px = base[0] + (rnd(i + 3) - 0.5) * 16 * s, py = base[1] - life * 60 * s;
+        ctx.globalAlpha = (1 - life) * 0.8; ctx.fillStyle = life < 0.35 ? '#ffd23f' : life < 0.7 ? '#ffb23f' : '#ff5c7a';
+        ctx.beginPath(); ctx.arc(px + osc(t + i, 0.6, 3), py, (6 * (1 - life) + 1.5) * s, 0, Math.PI * 2); ctx.fill();
+      }
+    } else if (look.effect === 'rainbow') {
+      const colors = ['#ff5c7a', '#ffb23f', '#ffd23f', '#4ade80', '#4fd8ff', '#8b6bff'];
+      ctx.lineWidth = 3.4 * s; ctx.globalAlpha = 0.75;
+      colors.forEach((c, i) => { ctx.strokeStyle = c; ctx.beginPath(); ctx.arc(cx - k.f * 6 * s, cy + 30 * s, (58 - i * 4) * s, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke(); });
+    }
+    ctx.restore();
+  }
+
+  function effectFront(ctx, k, look, t) {
+    const s = k.s / 1.5, [cx, cy] = onTorso(k, 0.6);
+    ctx.save();
+    if (look.effect === 'sparks') {
+      for (let i = 0; i < 6; i++) {
+        const ph = (t * 0.8 + rnd(i)) % 1, a = rnd(i + 11) * Math.PI * 2, d = (26 + rnd(i + 5) * 22) * s;
+        sparkle(ctx, cx + Math.cos(a) * d, cy + Math.sin(a) * d * 1.2, (2 + 4 * Math.sin(ph * Math.PI)) * s, Math.sin(ph * Math.PI));
+      }
+    } else if (look.effect === 'snow') {
+      ctx.fillStyle = '#f5f3fa';
+      for (let i = 0; i < 14; i++) {
+        const fall = (t * (12 + rnd(i) * 10) + rnd(i + 2) * 90) % 90, px = cx + (rnd(i + 7) - 0.5) * 90 * s + osc(t + i, 2, 4), py = cy - 55 * s + fall * s;
+        ctx.globalAlpha = 0.8 * (1 - fall / 90); ctx.beginPath(); ctx.arc(px, py, (1.2 + rnd(i + 9) * 1.6) * s, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+    ctx.restore();
   }
 
   function hat(ctx, hx, hy, r, f, look, t, s) {
@@ -424,6 +682,45 @@
       ctx.beginPath(); ctx.arc(hx, hy, r * 0.98, Math.PI * 1.05, Math.PI * 1.95); ctx.stroke();
       const bx = hx - f * r * 0.95, by = hy - r * 0.35;
       ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx - f * 8, by + 2 + osc(t, 0.5, 3), bx - f * 14, by + 5 + osc(t, 0.4, 4)); ctx.stroke();
+    } else if (look.hat === 'headphones') {
+      ctx.strokeStyle = look.accent ?? '#ff5c7a'; ctx.lineWidth = 3 * s / 1.5;
+      ctx.beginPath(); ctx.arc(hx, hy, r * 1.12, Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
+      ctx.fillStyle = look.accent ?? '#ff5c7a';
+      for (const dx of [-1, 1]) { ctx.beginPath(); ctx.ellipse(hx + dx * r * 1.02, hy + r * 0.05, r * 0.28, r * 0.42, 0, 0, Math.PI * 2); ctx.fill(); }
+    } else if (look.hat === 'cowboy') {
+      ctx.fillStyle = '#b07a44';
+      ctx.beginPath(); ctx.ellipse(hx, hy - r * 0.62, r * 1.75, r * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(hx - r * 0.8, hy - r * 0.62); ctx.quadraticCurveTo(hx - r * 0.85, hy - r * 1.75, hx, hy - r * 1.45); ctx.quadraticCurveTo(hx + r * 0.85, hy - r * 1.75, hx + r * 0.8, hy - r * 0.62); ctx.fill();
+      ctx.fillStyle = look.accent ?? '#ff5c7a'; ctx.fillRect(hx - r * 0.8, hy - r * 0.9, r * 1.6, r * 0.2);
+    } else if (look.hat === 'viking') {
+      ctx.fillStyle = '#9b93b2'; ctx.beginPath(); ctx.arc(hx, hy - r * 0.3, r * 1.02, Math.PI, 0); ctx.fill();
+      ctx.fillStyle = '#6f6689'; ctx.fillRect(hx - r * 1.05, hy - r * 0.4, r * 2.1, r * 0.2);
+      ctx.fillStyle = '#f5f3fa';
+      for (const dx of [-1, 1]) { ctx.beginPath(); ctx.moveTo(hx + dx * r * 0.85, hy - r * 0.55); ctx.quadraticCurveTo(hx + dx * r * 1.7, hy - r * 0.9, hx + dx * r * 1.55, hy - r * 1.8); ctx.quadraticCurveTo(hx + dx * r * 1.3, hy - r * 1.05, hx + dx * r * 0.7, hy - r * 0.95); ctx.fill(); }
+    } else if (look.hat === 'propeller') {
+      ctx.fillStyle = look.accent ?? '#ff5c7a';
+      ctx.beginPath(); ctx.arc(hx, hy - r * 0.42, r * 0.98, Math.PI, 0); ctx.fill();
+      ctx.fillRect(f > 0 ? hx : hx - r * 1.5, hy - r * 0.48, r * 1.5, r * 0.22);
+      ctx.strokeStyle = '#c4bbdd'; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(hx, hy - r * 1.4); ctx.lineTo(hx, hy - r * 1.9); ctx.stroke();
+      const spin = Math.cos(t * 18); ctx.fillStyle = '#ffd23f';
+      ctx.beginPath(); ctx.ellipse(hx, hy - r * 1.92, Math.abs(spin) * r * 1.1 + 1, r * 0.16, 0, 0, Math.PI * 2); ctx.fill();
+    } else if (look.hat === 'wizard') {
+      ctx.fillStyle = '#8b6bff';
+      ctx.beginPath(); ctx.moveTo(hx - r * 1.2, hy - r * 0.55); ctx.quadraticCurveTo(hx, hy - r * 0.8, hx + r * 1.2, hy - r * 0.55);
+      ctx.lineTo(hx + f * r * 0.2, hy - r * 2.6); ctx.quadraticCurveTo(hx - f * r * 0.8, hy - r * 2.9 + osc(t, 1.2, 1.5), hx - f * r * 1.1, hy - r * 2.3); ctx.lineTo(hx - r * 0.2 * f, hy - r * 2.2); ctx.closePath(); ctx.fill();
+      star(ctx, hx - f * r * 0.1, hy - r * 1.35, r * 0.28, '#ffd23f', t);
+    } else if (look.hat === 'mohawk') {
+      ctx.fillStyle = look.accent ?? '#ff5c7a'; ctx.beginPath();
+      for (let i = 0; i <= 5; i++) {
+        const a = Math.PI * (1.18 + i * 0.128), bx = hx + Math.cos(a) * r, by = hy + Math.sin(a) * r;
+        const tip = [hx + Math.cos(a) * r * 1.75, hy + Math.sin(a) * r * 1.75 + osc(t + i, 0.8, 0.8)];
+        if (i === 0) ctx.moveTo(bx, by); ctx.lineTo(tip[0], tip[1]);
+        const a2 = Math.PI * (1.18 + (i + 0.5) * 0.128); ctx.lineTo(hx + Math.cos(a2) * r, hy + Math.sin(a2) * r);
+      }
+      ctx.closePath(); ctx.fill();
+    } else if (look.hat === 'halo') {
+      ctx.strokeStyle = '#ffd23f'; ctx.lineWidth = 2.6 * s / 1.5; ctx.shadowColor = '#ffd23f'; ctx.shadowBlur = 8;
+      ctx.beginPath(); ctx.ellipse(hx, hy - r * 1.45 + osc(t, 1.6, 1.5), r * 0.85, r * 0.26, 0, 0, Math.PI * 2); ctx.stroke();
     } else if (look.hat === 'grad') {
       ctx.fillStyle = look.color;
       ctx.beginPath(); ctx.moveTo(hx - r * 1.4, hy - r * 0.95); ctx.lineTo(hx, hy - r * 1.45); ctx.lineTo(hx + r * 1.4, hy - r * 0.95); ctx.lineTo(hx, hy - r * 0.5); ctx.closePath(); ctx.fill();
@@ -542,7 +839,7 @@
 
   const SCENES = [
     // ─── Вход ───
-    { id: 'hello', group: 'enter', title: 'Выбегает и машет', where: 'Первый экран после открытия из MAX; приветствие каждый раз на новом языке', trigger: 'при входе', dur: 4,
+    { id: 'hello', fixed: 'Бег из 8 фаз, приветствие на 12 языках', group: 'enter', title: 'Выбегает и машет', where: 'Первый экран после открытия из MAX; приветствие каждый раз на новом языке', trigger: 'при входе', dur: 4,
       draw(ctx, W, H, t) {
         const g = H * 0.82; ground(ctx, W, g);
         const T = t % 4, runEnd = 1.3, x = lerp(-30, W * 0.5, ease(clamp01(T / runEnd)));
@@ -585,19 +882,45 @@
         dust(ctx, W / 2, g, t);
         figure(ctx, runPose(t), W / 2, g, { t });
       } },
-    { id: 'juggle', group: 'load', title: 'Жонглирует цифрами', where: 'Загрузка профиля и истории', trigger: 'пока ждём', dur: 1.2,
+    { id: 'juggle', fixed: 'Цифры 6 и 7 подбрасываются руками по очереди', group: 'load', title: 'Жонглирует цифрами', where: 'Загрузка профиля и истории', trigger: 'пока ждём', dur: 1.2,
       draw(ctx, W, H, t) {
-        const g = H * 0.92; ground(ctx, W, g);
-        const k = figure(ctx, keys([[0, P.juggleA], [0.3, P.juggleB], [0.6, P.juggleA]], t % 0.6), W / 2, g, { t, s: 1.2 });
-        ['1', '2', '3'].forEach((d, i) => {
-          const p = ((t / 1.2) + i / 3) % 1, x = W / 2 + 6 + Math.cos(p * Math.PI * 2) * 44;
-          const y = k.head[1] - 22 - Math.abs(Math.sin(p * Math.PI * 2)) * 30;
-          const color = ['#c8f53c', '#ff5c7a', '#4fd8ff'][i];
-          ctx.save(); ctx.globalAlpha = 0.22; ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-          text(ctx, d, x, y + 1, 24, color, { stroke: 5 });
+        const g = H * 0.92, T = t % 1.2; ground(ctx, W, g);
+        // Каскад из двух цифр: бросок 0,45 с, в руке 0,15 с. Правая бросает в 0 и 0,9, левая — в 0,3 и 0,6.
+        const FLY = 0.45, HOLD = 0.15, CYCLE = 1.2;
+        const pulse = (at) => { const d = ((T - at) % CYCLE + CYCLE) % CYCLE; return d < 0.18 ? Math.sin((d / 0.18) * Math.PI) : 0; };
+        const dip = (at) => { const d = ((T - at) % CYCLE + CYCLE) % CYCLE; return d < 0.15 ? Math.sin((d / 0.15) * Math.PI) : 0; };
+        const throwR = pulse(0) + pulse(0.9), throwL = pulse(0.3) + pulse(0.6);
+        const catchR = dip(0.75) + dip(1.05), catchL = dip(0.45) + dip(0.15);
+        const pose = with_(P.stand, {
+          head: -16, lean: 0,
+          ra: [58 + throwR * 28 - catchR * 12, 58 - throwR * 30 + catchR * 10],
+          la: [22 + throwL * 30 - catchL * 12, 92 - throwL * 34 + catchL * 10],
         });
+        const k = figure(ctx, pose, W / 2, g, { t, s: 1.2 });
+        const hand = { R: k.ra[1], L: k.la[1] };
+        // Маршрут цифры: [момент броска, из какой руки, в какую].
+        const routes = {
+          '6': [[0, 'R', 'L'], [0.6, 'L', 'R']],
+          '7': [[0.3, 'L', 'R'], [0.9, 'R', 'L']],
+        };
+        const colors = { '6': '#c8f53c', '7': '#ff5c7a' };
+        for (const [digit, legs] of Object.entries(routes)) {
+          let pos = null;
+          for (const [at, from, to] of legs) {
+            const d = ((T - at) % CYCLE + CYCLE) % CYCLE;
+            if (d < FLY) {
+              const u = d / FLY, a = hand[from], b = hand[to];
+              pos = [lerp(a[0], b[0], u) + Math.sin(u * Math.PI) * (from === 'R' ? 10 : -10), lerp(a[1], b[1], u) - 4 * 62 * u * (1 - u) - 10];
+            } else if (d < FLY + HOLD && !pos) {
+              pos = [hand[to][0], hand[to][1] - 10];
+            }
+          }
+          if (!pos) continue;
+          ctx.save(); ctx.globalAlpha = 0.22; ctx.fillStyle = colors[digit]; ctx.beginPath(); ctx.arc(pos[0], pos[1], 14, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+          text(ctx, digit, pos[0], pos[1] + 1, 24, colors[digit], { stroke: 5 });
+        }
       } },
-    { id: 'pushBar', group: 'load', title: 'Толкает полоску загрузки', where: 'Долгая загрузка с прогрессом', trigger: 'пока ждём', dur: 3.4,
+    { id: 'pushBar', fixed: 'Полоска перед стикменом, он толкает её руками', group: 'load', title: 'Толкает полоску загрузки', where: 'Долгая загрузка с прогрессом', trigger: 'пока ждём', dur: 3.4,
       draw(ctx, W, H, t) {
         const g = H * 0.86, T = t % 3.4, p = clamp01(T / 3); ground(ctx, W, g);
         // Полоска — брусок на уровне рук; стикмен за ней и толкает её вперёд.
@@ -614,37 +937,28 @@
       } },
     { id: 'hangBar', group: 'load', title: 'Подтягивается на полоске', where: 'Загрузка перед матчем', trigger: 'пока ждём', dur: 1.6,
       draw(ctx, W, H, t) {
-        const p = (t / 4) % 1, barY = H * 0.2, s = 1.2;
+        const p = (t / 4) % 1, barY = H * 0.24;
         bar(ctx, 40, barY, W - 80, 14, p);
-        // Кисти стоят на полоске, тело поднимается и опускается, локти сгибаются в стороны.
-        const up = ease((Math.sin((t / 1.6) * Math.PI * 2 - Math.PI / 2) + 1) / 2);
-        const l1 = BONES.upper * s, l2 = BONES.fore * s, reach = l1 + l2;
-        const hands = [[W / 2 - 16, barY + 7], [W / 2 + 16, barY + 7]];
-        const sh = [W / 2, barY + 7 + lerp(reach * 0.93, reach * 0.3, up)];
-        const pose = with_(P.hang, { head: lerp(-4, -16, up), rl: [8 + osc(t, 1.6, 4), 22 + up * 20], ll: [-4 + osc(t, 1.6, 3), 30 + up * 24] });
-        const g = sh[1] + (BONES.torso + BONES.thigh + BONES.shin) * s;
-        figure(ctx, pose, W / 2, g, { t, s, noArms: true });
-        hands.forEach((hand, i) => {
-          const side = i === 0 ? -1 : 1;
-          const el = elbow(sh, hand, l1, l2, side);
-          poly(ctx, [sh, el, hand], me.color, 4.6 * s / 1.5, i === 0 ? 0.55 : 1);
-        });
-        text(ctx, `${Math.round(p * 100)}%`, W / 2, barY - 14, 11, '#9b93b2', { weight: 700 });
+        const up = (Math.sin(t / 1.6 * Math.PI * 2) + 1) / 2;
+        const pose = mix(P.hang, P.pull, up);
+        const bodyLen = (BONES.torso + BONES.thigh + BONES.shin + BONES.upper + BONES.fore) * 1.2;
+        figure(ctx, pose, W / 2, barY + bodyLen - up * 14, { t, s: 1.2 });
       } },
 
     // ─── Поиск ───
-    { id: 'warmup', group: 'search', title: 'Бой с тенью', where: 'Экран «Ищем соперника»', trigger: 'пока ищем', dur: 2.4,
+    { id: 'warmup', fixed: 'Сначала удары, потом уклоны; тень отодвинута, без наложений', group: 'search', title: 'Бой с тенью', where: 'Экран «Ищем соперника»', trigger: 'пока ищем', dur: 2.4,
       draw(ctx, W, H, t) {
         const g = H * 0.84; ground(ctx, W, g); const T = t % 2.4;
         // Серия: джеб, джеб, прямой — затем уклон назад и нырок, как от ответного удара тени.
         const combo = (x) => keys([[0, P.guard], [0.15, P.punch], [0.3, P.guard], [0.45, P.punch], [0.6, P.guard], [0.78, P.cross], [1, P.guard], [1.25, P.dodge], [1.5, P.guard], [1.75, P.duck], [2, P.guard], [2.4, P.guard]], x);
         const shadow = (x) => keys([[0, P.guard], [1.1, P.guard], [1.25, P.punch], [1.45, P.guard], [1.7, P.kick], [1.95, P.guard], [2.4, P.guard]], x);
-        figure(ctx, combo(T), W / 2 - 24, g, { t, gloves: true });
-        figure(ctx, shadow(T), W / 2 + 56, g, { t, f: -1, gloves: true, alpha: 0.2 });
+        // Боец и тень стоят на дистанции: удары не долетают, силуэты не пересекаются.
+        figure(ctx, combo(T), W * 0.3, g, { t, gloves: true });
+        figure(ctx, shadow(T), W * 0.74, g, { t, f: -1, gloves: true, alpha: 0.22 });
       } },
 
     // ─── Старт ───
-    { id: 'faceoff', group: 'start', title: 'Выход на ринг и VS', where: 'Соперник найден', trigger: 'один раз, 2 с', dur: 3,
+    { id: 'faceoff', fixed: 'Новый бег с пылью', group: 'start', title: 'Выход на ринг и VS', where: 'Соперник найден', trigger: 'один раз, 2 с', dur: 3,
       draw(ctx, W, H, t) {
         const g = H * 0.84, T = t % 3; ground(ctx, W, g);
         const walk = ease(clamp01(T / 1));
@@ -733,7 +1047,7 @@
       } },
 
     // ─── Пауза ───
-    { id: 'rest', group: 'break', title: 'Передышка в углах ринга', where: 'Пауза 10 секунд', trigger: 'фон', dur: 2.4,
+    { id: 'rest', fixed: 'Сплошные канаты, руки внизу на коленях', group: 'break', title: 'Передышка в углах ринга', where: 'Пауза 10 секунд', trigger: 'фон', dur: 2.4,
       draw(ctx, W, H, t) {
         const g = H * 0.88; ground(ctx, W, g);
         // Ринг: две стойки и три сплошных каната через всю сцену, за спинами бойцов.
@@ -764,7 +1078,7 @@
         figure(ctx, keys([[0, P.crouch], [0.25, P.jump], [0.6, P.armsUp], [0.9, P.crouch], [1.2, P.crouch]], T), W / 2, g, { t });
         trophy(ctx, W * 0.78, g - 12, 1.1);
       } },
-    { id: 'defeat', group: 'result', title: 'Грустит и встаёт', where: 'Экран поражения', trigger: 'один раз', dur: 4,
+    { id: 'defeat', fixed: 'Без надписи «Ещё раз!»', group: 'result', title: 'Грустит и встаёт', where: 'Экран поражения', trigger: 'один раз', dur: 4,
       draw(ctx, W, H, t) {
         const g = H * 0.86, T = t % 4; ground(ctx, W, g);
         const pose = keys([[0, P.sad], [1.6, P.sad], [2.2, P.crouch], [2.6, P.stand], [3, P.thumbs], [4, P.thumbs]], T);
@@ -787,7 +1101,7 @@
         figure(ctx, runPose(t, 0.48), x, g, { t });
         text(ctx, '🔥 3 победы подряд', W * 0.3, H * 0.1, 12, '#ffb23f', { weight: 700 });
       } },
-    { id: 'coach', group: 'meta', title: 'Стикмен-тренер', where: 'Слабая тема: тренировка после матча', trigger: 'после матча, по поводу', dur: 4,
+    { id: 'coach', fixed: 'Переделан: тренировка со свистком и счётом', group: 'meta', title: 'Стикмен-тренер', where: 'Слабая тема: тренировка после матча', trigger: 'после матча, по поводу', dur: 4,
       draw(ctx, W, H, t) {
         const g = H * 0.86, T = t % 4, rep_ = 0.75, reps = 4; ground(ctx, W, g);
         // Тренер с планшетом «%» свистит на каждый счёт, игрок приседает; в конце — «класс!».
@@ -827,7 +1141,7 @@
         figure(ctx, pose, W * 0.38, g, { t, mood: T > 1.4 ? 'wow' : undefined });
         if (T > 1.5) { const k = clamp01((T - 1.5) / 0.5); text(ctx, '💎', bx, by - 36 - k * 34, 24, '#fff', { alpha: k }); for (let i = 0; i < 4; i++) sparkle(ctx, bx + Math.cos(i * 1.6) * 26, by - 60 + Math.sin(i * 1.6) * 20, 4, k); }
       } },
-    { id: 'ratingUp', group: 'meta', title: 'Взбирается по рейтингу', where: 'Рейтинг вырос после матча', trigger: 'на событие', dur: 3,
+    { id: 'ratingUp', fixed: 'Стикмен всё время в кадре', group: 'meta', title: 'Взбирается по рейтингу', where: 'Рейтинг вырос после матча', trigger: 'на событие', dur: 3,
       draw(ctx, W, H, t) {
         const T = t % 3, steps = 4, stepW = 50, stepH = 13, base = H * 0.94, x0 = W * 0.12, s = 0.95;
         ctx.fillStyle = '#2a2338';
@@ -910,7 +1224,7 @@
     const up = el('button', { class: 'vote up', type: 'button', 'aria-pressed': 'false', onclick: () => vote(id, 1) });
     const down = el('button', { class: 'vote down', type: 'button', 'aria-pressed': 'false', onclick: () => vote(id, -1) });
     const avatars = el('div', { class: 'avatars' });
-    const noteBox = el('textarea', { class: 'note', id: 'note-' + id, placeholder: 'Что поменять? Например: быстрее, без крови, добавить звук…', hidden: true });
+    const noteBox = el('textarea', { class: 'note', id: 'note-' + id, placeholder: 'Что поменять? Когда правка учтена — сотрите комментарий, чтобы он не попадал в экспорт.', hidden: true });
     noteBox.value = state.myVotes.notes[id] ?? '';
     noteBox.addEventListener('input', () => {
       state.myVotes.notes[id] = noteBox.value;
@@ -936,7 +1250,8 @@
           el('div', { class: 'meta' },
             el('h3', { textContent: scene.title }),
             el('p', { class: 'where', textContent: scene.where }),
-            el('div', { class: 'tags' }, el('span', { class: 'tag', textContent: scene.trigger }), el('span', { class: 'tag time', textContent: `цикл ${scene.dur} с` }))),
+            el('div', { class: 'tags' }, el('span', { class: 'tag', textContent: scene.trigger }), el('span', { class: 'tag time', textContent: `цикл ${scene.dur} с` })),
+            scene.fixed && el('p', { class: 'fixed', textContent: '✓ Учтено: ' + scene.fixed })),
           v.root);
         grid.append(card);
         const entry = { scene, canvas, card, v, playing: !reduced, t: 0.9, visible: false };
@@ -1008,6 +1323,7 @@
       const box = document.getElementById(boxId);
       for (const [value, label] of list) {
         const b = el('button', { type: 'button', class: isColor ? 'swatch' : 'opt', 'aria-pressed': String(me[key] === value), 'aria-label': label, title: label, textContent: isColor ? '' : label });
+        b.dataset.value = value;
         if (isColor) b.style.background = value;
         b.addEventListener('click', () => { me[key] = value; store.set('stickman.me', me); box.querySelectorAll('button').forEach((x) => x.setAttribute('aria-pressed', String(x === b))); });
         box.append(b);
@@ -1015,6 +1331,91 @@
     };
     make('c-color', COLORS, 'color', true); make('c-hat', HATS, 'hat'); make('c-item', ITEMS, 'item'); make('c-face', FACES, 'face');
   }
+
+  // ═══ Гардероб ═══
+
+  const dialog = document.getElementById('wardrobe');
+  const wrCanvas = document.getElementById('wr-canvas');
+  const POSES = [['idle', 'Стойка'], ['run', 'Бег'], ['fight', 'Бой'], ['win', 'Победа']];
+  let wrTab = 'colors', wrPose = 'idle', wrT = 0;
+
+  function saveLook() { store.set('stickman.me', me); syncStudio(); renderWardrobe(); }
+
+  function syncStudio() {
+    const groups = [['c-color', 'color'], ['c-hat', 'hat'], ['c-item', 'item'], ['c-face', 'face']];
+    for (const [id, key] of groups) {
+      document.querySelectorAll('#' + id + ' button').forEach((b) => {
+        const value = key === 'color' ? b.dataset.value : b.dataset.value;
+        b.setAttribute('aria-pressed', String(value === me[key]));
+      });
+    }
+  }
+
+  function priceOf(key, value) { const cat = WARDROBE.find((c) => c.key === key); return cat?.items.find((i) => i[0] === value)?.[4] ?? 0; }
+
+  function renderWardrobe() {
+    const tabs = document.getElementById('wr-tabs');
+    tabs.replaceChildren(...[['colors', 'Цвета'], ...WARDROBE.map((c) => [c.key, c.title])].map(([key, title]) =>
+      el('button', { class: 'opt', type: 'button', 'aria-pressed': String(wrTab === key), textContent: title, onclick: () => { wrTab = key; renderWardrobe(); } })));
+
+    const panel = document.getElementById('wr-panel');
+    if (wrTab === 'colors') {
+      const sw = (list, key) => el('div', { class: 'swatches' }, ...list.map((c) => {
+        const b = el('button', { class: 'swatch', type: 'button', 'aria-pressed': String(me[key] === c), 'aria-label': c, title: c });
+        b.style.background = c; b.addEventListener('click', () => { me[key] = c; saveLook(); }); return b;
+      }));
+      panel.replaceChildren(el('div', { class: 'wr-colors' },
+        el('div', {}, el('div', { class: 'label', textContent: 'Основной цвет — тело и лицо' }), sw(PALETTE, 'color')),
+        el('div', {}, el('div', { class: 'label', textContent: 'Акцент — одежда, наушники, маска, флаг' }), sw(ACCENTS, 'accent'))));
+    } else {
+      const cat = WARDROBE.find((c) => c.key === wrTab);
+      panel.replaceChildren(el('div', { class: 'wr-items' }, ...cat.items.map(([value, name, icon, rarity, price]) => {
+        const [rarityName, rarityColor] = RARITY[rarity];
+        const dot = el('span', { class: 'rar' }); dot.style.background = rarityColor;
+        return el('button', { class: 'wr-item', type: 'button', 'aria-pressed': String(me[cat.key] === value), onclick: () => { me[cat.key] = value; saveLook(); } },
+          el('span', { class: 'ico', textContent: icon }), el('span', { class: 'nm', textContent: name }),
+          el('span', { class: 'meta2' }, dot, rarityName + (price ? ` · ${price} ⚡` : ' · бесплатно')));
+      })));
+    }
+
+    document.getElementById('wr-poses').replaceChildren(...POSES.map(([key, title]) =>
+      el('button', { class: 'opt', type: 'button', 'aria-pressed': String(wrPose === key), textContent: title, onclick: () => { wrPose = key; renderWardrobe(); } })));
+
+    const chosen = WARDROBE.map((c) => { const it = c.items.find((i) => i[0] === me[c.key]); return it && it[0] !== 'none' && it[4] > 0 ? `${it[2]} ${it[1]}` : null; }).filter(Boolean);
+    document.getElementById('wr-outfit').replaceChildren(...(chosen.length ? chosen : ['Базовый образ']).map((x) => el('span', { textContent: x })));
+    const total = WARDROBE.reduce((sum, c) => sum + priceOf(c.key, me[c.key]), 0);
+    document.getElementById('wr-total').textContent = total.toLocaleString('ru-RU');
+  }
+
+  function drawWardrobePreview(dt) {
+    wrT += reduced ? 0 : dt;
+    const [ctx, W, H] = fit(wrCanvas);
+    ctx.clearRect(0, 0, W, H);
+    const k = W / 240; ctx.save(); ctx.scale(k, k);
+    const w = 240, h = H / k, g = h * 0.86;
+    ctx.fillStyle = '#17131f'; ctx.beginPath(); ctx.ellipse(w / 2, g, 62, 9, 0, 0, Math.PI * 2); ctx.fill();
+    let pose;
+    if (wrPose === 'run') pose = runPose(wrT);
+    else if (wrPose === 'fight') pose = keys([[0, P.guard], [0.3, P.punch], [0.6, P.guard], [0.9, P.cross], [1.2, P.guard], [1.6, P.guard2], [2, P.guard]], wrT % 2);
+    else if (wrPose === 'win') pose = keys([[0, P.crouch], [0.3, P.jump], [0.7, P.armsUp], [1.1, P.crouch], [1.4, P.crouch]], wrT % 1.4);
+    else pose = keys([[0, P.stand], [2.4, P.stand], [2.8, P.wave1], [3.1, P.wave2], [3.4, P.wave1], [3.8, P.stand], [5, P.stand]], wrT % 5);
+    figure(ctx, pose, w / 2, g, { t: wrT, s: 2.1, gloves: wrPose === 'fight' });
+    ctx.restore();
+  }
+
+  function randomLook() {
+    const pick = (list) => list[Math.floor(Math.random() * list.length)];
+    for (const cat of WARDROBE) me[cat.key] = pick(cat.items)[0];
+    me.color = pick(PALETTE); me.accent = pick(ACCENTS.filter((c) => c !== me.color));
+    saveLook();
+  }
+
+  document.getElementById('open-wardrobe').addEventListener('click', () => { renderWardrobe(); dialog.showModal(); });
+  document.getElementById('wr-close').addEventListener('click', () => dialog.close());
+  document.getElementById('wr-done').addEventListener('click', () => dialog.close());
+  document.getElementById('wr-random').addEventListener('click', randomLook);
+  document.getElementById('wr-reset').addEventListener('click', () => { Object.assign(me, DEFAULT_LOOK); saveLook(); });
+  dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
 
   // ═══ Цикл отрисовки ════════════════════════════════════════════════════════
 
@@ -1055,6 +1456,7 @@
     ctx.fillStyle = '#17131f'; ctx.beginPath(); ctx.ellipse(85, 196, 50, 8, 0, 0, Math.PI * 2); ctx.fill();
     figure(ctx, with_(pose, { lean: pose.lean + osc(studioT, 3, 1.5) }), 85, 196, { t: studioT, s: 2 });
     ctx.restore();
+    if (dialog.open) drawWardrobePreview(dt);
     requestAnimationFrame(frame);
   }
 
