@@ -1378,7 +1378,6 @@
         ctx.save(); ctx.strokeStyle = '#c8f53c'; ctx.lineWidth = 7; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.shadowColor = '#c8f53c'; ctx.shadowBlur = 12;
         ctx.beginPath(); ctx.moveTo(xB - 62, top + 70); ctx.lineTo(xB - 50, top + 62); ctx.lineTo(xB - 34, top + 112); ctx.lineTo(xB - 16, top); ctx.lineTo(xB + 56, top); ctx.stroke(); ctx.restore();
         if (drop >= 1 && T < 1.1) burst(ctx, xB - 34, g - 6, 20, '#ffd23f', 1 - (T - 0.8) / 0.3);
-        if (T > 1.8) text(ctx, '√соперник = 0', W * 0.5, H * 0.14, 16, '#c8f53c', { stroke: 5, alpha: clamp01((T - 1.8) * 3) });
       } },
     { id: 'fat-ice', fixed: 'Чистый кубик: без палки и цифры внутри', group: 'fatal', title: '🧊 Абсолютный ноль', where: 'Снегопад — соперник дрожит и вмерзает в кубик льда', trigger: 'эпическая · 1 100 ⚡', dur: 4, wide: true,
       draw(ctx, W, H, t) {
@@ -1396,7 +1395,6 @@
           roundRect(ctx, xB - 42, g - 130, 84, 130, 10); ctx.fill(); ctx.stroke();
           ctx.restore();
         }
-        if (T > 2) text(ctx, 'Заморожен!', W * 0.3, H * 0.12, 16, '#4fd8ff', { stroke: 5, alpha: clamp01((T - 2) * 3) });
       } },
     { id: 'fat-gift', fixed: 'Коробка падает ровно по центру и накрывает целиком', group: 'fatal', title: '🎁 Упакован!', where: 'Сверху падает коробка и накрывает соперника целиком, затем крышка и бант', trigger: 'эпическая · 1 200 ⚡', dur: 4, wide: true,
       draw(ctx, W, H, t) {
@@ -1428,7 +1426,6 @@
           ctx.beginPath(); ctx.arc(cx, y - 4, 6 * bow, 0, Math.PI * 2); ctx.fill();
           if (T < 2.7) for (let i = 0; i < 5; i++) sparkle(ctx, cx + Math.cos(i * 1.3) * 62, y + 20 + Math.sin(i * 1.7) * 50, 5, 1 - (T - 1.6));
         }
-        if (T > 2) text(ctx, 'Упакован!', W * 0.3, H * 0.12, 16, '#ff5c7a', { stroke: 5, alpha: clamp01((T - 2) * 3) });
       } },
     { id: 'fat-bolt', fixed: 'Понятный сюжет: формула → шар энергии → удар током', group: 'fatal', title: '⚡ E = mc²', where: 'Победитель пишет формулу в воздухе, она сжимается в шар энергии и бьёт соперника током', trigger: 'легендарная · 1 800 ⚡', dur: 4.6, wide: true,
       draw(ctx, W, H, t) {
@@ -1474,7 +1471,7 @@
           for (let i = 0; i < 7; i++) { const an = Math.PI * (1.1 + i * 0.13), r = BONES.head * s; ctx.beginPath(); ctx.moveTo(kB.head[0] + Math.cos(an) * r, kB.head[1] + Math.sin(an) * r); ctx.lineTo(kB.head[0] + Math.cos(an) * r * 1.7, kB.head[1] + Math.sin(an) * r * 1.7); ctx.stroke(); }
           ctx.restore();
           for (let i = 0; i < 4; i++) { const ph = ((t * 0.8 + i * 0.25) % 1); ctx.fillStyle = `rgba(155,147,178,${0.5 * (1 - ph)})`; ctx.beginPath(); ctx.arc(kB.head[0] + osc(t + i, 1, 6), kB.head[1] - 22 - ph * 36, 5 + ph * 7, 0, Math.PI * 2); ctx.fill(); }
-          text(ctx, 'Энергия формулы!', W * 0.5, H * 0.12, 15, '#ffd23f', { stroke: 5, alpha: clamp01((T - 2.9) * 3) });
+
         }
       } },
     { id: 'fat-loop', group: 'fatal', title: '∞ Бесконечная петля', where: 'Знак бесконечности подхватывает соперника и катает по восьмёрке, пока не закружится голова', trigger: 'легендарная · 2 000 ⚡', dur: 4.4, wide: true,
@@ -1501,7 +1498,7 @@
           const k = figure(ctx, land < 1 ? P.crouch : P.stand, cx, g, { t, f: -1, look: OPPONENT, gloves: true, s: 1.3, mood: 'ko' });
           // Звёздочки кружатся над головой.
           for (let i = 0; i < 3; i++) { const an = t * 4 + (i * Math.PI * 2) / 3; star(ctx, k.head[0] + Math.cos(an) * 16, k.head[1] - 18 + Math.sin(an) * 4, 4, '#ffd23f', t * 3); }
-          text(ctx, 'Бесконечная петля!', W * 0.5, H * 0.12, 15, '#8b6bff', { stroke: 5, alpha: land });
+
         }
       } },
     { id: 'fat-void', group: 'fatal', title: '🕳️ Деление на ноль', where: 'Чёрная дыра «÷0» закручивает соперника и выплёвывает конфетти', trigger: 'легендарная · 2 500 ⚡', dur: 4.4, wide: true,
@@ -1522,7 +1519,6 @@
         const pull = ease(clamp01((T - 0.9) / 1.4));
         if (pull < 1) opponentAt(ctx, P.hit, xB, g, { t, rot: pull * 9, scale: 1 - pull, pivotUp: 55, dy: -pull * (g - 55 - hy), mood: 'wow' });
         if (T > 2.5 && T < 3.6) { const k2 = (T - 2.5) / 1.1; for (let i = 0; i < 24; i++) { const a = rnd(i) * Math.PI * 2, d = k2 * (30 + rnd(i + 1) * 60); ctx.save(); ctx.globalAlpha = 1 - k2; ctx.fillStyle = ['#c8f53c', '#ff5c7a', '#4fd8ff', '#ffd23f'][i % 4]; ctx.translate(xB + Math.cos(a) * d, hy + Math.sin(a) * d); ctx.rotate(t * 4 + i); ctx.fillRect(-3, -1.5, 6, 3); ctx.restore(); } }
-        if (T > 2.6) text(ctx, 'Деление на ноль!', W * 0.5, H * 0.12, 15, '#8b6bff', { stroke: 5, alpha: clamp01((T - 2.6) * 3) });
       } },
   ];
 
